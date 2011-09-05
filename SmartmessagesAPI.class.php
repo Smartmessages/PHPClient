@@ -71,7 +71,7 @@ class SmartmessagesAPI {
 	 * Open a session with the Smartmessages API
 	 * Throws an exception if login fails
 	 * @param string $user The user name (usually an email address)
-	 * @param string $password
+	 * @param string $pass
 	 * @param string $apikey The API key as shown on the settings page of the smartmessages UI
 	 * @param string $baseurl The initial entry point for the Smartmessage API
 	 * @return boolean true if login was successful
@@ -156,7 +156,7 @@ class SmartmessagesAPI {
 	/**
 	 * Add a mailing list
 	 * @param string $name The name of the new list (max 100 chars)
-	 * @param string $desc The description of the new list (max 255 chars)
+	 * @param string $description The description of the new list (max 255 chars)
 	 * @param boolean $visible Whether this list is publicly visible or not
 	 * @return integer The ID of the newly created list
 	 * @access public
@@ -171,7 +171,7 @@ class SmartmessagesAPI {
 	 * Note that all params are required, you can't just set one
 	 * @param integer $listid The ID of the list to update
 	 * @param string $name The new name of the list (max 100 chars)
-	 * @param string $desc The new description of the list (max 255 chars)
+	 * @param string $description The new description of the list (max 255 chars)
 	 * @param boolean $visible Whether this list is publicly visible or not
 	 * @return boolean True on success
 	 * @access public
@@ -264,6 +264,7 @@ class SmartmessagesAPI {
 
 	/**
 	 * Get a list of everyone that has unsubscribed from the specified mailing list
+	 * @param integer $listid
 	 * @return array
 	 * @access public
 	 */
@@ -396,6 +397,7 @@ class SmartmessagesAPI {
 	 * It's more efficient to use a function on your own site to do this, but using this will ensure that any address you add to a list will also be accepted by us
 	 * If you encounter an address that we reject that you think we shouldn't, please tell us!
 	 * Read our support wiki for more details on this
+	 * @param string $address
 	 * @return array
 	 * @access public
 	 */
@@ -428,8 +430,9 @@ class SmartmessagesAPI {
 
 	/**
 	 * Update the name of a campaign folder
-	 * @param integer $listid The ID of the campaign folder to update
+	 * @param $campaignid The ID of the campaign folder to update
 	 * @param string $name The new name of the campaign folder (max 100 chars)
+	 * @internal param int $listid
 	 * @return boolean True on success
 	 * @access public
 	 */
@@ -441,7 +444,7 @@ class SmartmessagesAPI {
 	/**
 	 * Delete a campaign folder
 	 * Note that deleting a campaign will also delete all mailshots that it contains
-	 * @param integer $listid The ID of the campaign folder to delete
+	 * @param integer $campaignid The ID of the campaign folder to delete
 	 * @return boolean True on success
 	 * @access public
 	 */
@@ -466,7 +469,7 @@ class SmartmessagesAPI {
 
 	/**
 	 * Get detailed info about a single mailshot
-	 * @param integer $maishotid The ID of the mailshot you want to get info on
+	 * @param integer $mailshotid The ID of the mailshot you want to get info on
 	 * @return array
 	 * @access public
 	 */
@@ -502,36 +505,40 @@ class SmartmessagesAPI {
 	 * Add a new template
 	 * All string params should use ISO-8859-1 character set
 	 * @param string $name The name of the new template
-	 * @param string $plain The plain text version of the template
 	 * @param string $html The HTML version of the template
+	 * @param string $plain The plain text version of the template
 	 * @param string $subject The default subject template
 	 * @param string $description A plain-text description of the template
 	 * @param boolean $generateplain Whether to generate a plain text version from the HTML version (if set, will ignore the value of $plain)
 	 * @param string $language What language this template is in (ISO 639-1 2-char code), mainly for internal tracking purposes, but you may find it useful if you use several languages
+	 * @param boolean $importimages Whether to do a one-off import and URL conversion of images referenced in the template
 	 * @return integer, or false on failure
 	 * @access public
 	 */
-	public function addtemplate($name, $html, $plain, $subject, $description = '', $generateplain = false, $language = 'en') {
+	public function addtemplate($name, $html, $plain, $subject, $description = '', $generateplain = false, $language = 'en', $importimages = false) {
 		//Use a post request to cope with large content
-		$res = $this->dorequest('addtemplate', array('name' => $name, 'plain' => $plain, 'html' => $html, 'subject' => $subject, 'description' => $description, 'generateplain' => $generateplain, 'language' => $language), NULL, true);
+		$res = $this->dorequest('addtemplate', array('name' => $name, 'plain' => $plain, 'html' => $html, 'subject' => $subject, 'description' => $description, 'generateplain' => $generateplain, 'language' => $language, 'importimages' => ($importimages == true)), NULL, true);
 		return ($res['status']?$res['templateid']:false); //Return the new template ID on success, or false if it failed
 	}
 
 	/**
 	 * Update an existing template
 	 * All string params should use ISO-8859-1 character set
+	 * @param integer $templateid
 	 * @param string $name The name of the template
-	 * @param string $plain The plain text version of the template
 	 * @param string $html The HTML version of the template
+	 * @param string $plain The plain text version of the template
 	 * @param string $subject The default subject template
 	 * @param string $description A plain-text description of the template
 	 * @param boolean $generateplain Whether to generate a plain text version from the HTML version (if set, will ignore the value of $plain), defaults to false
+	 * @param string $language What language this template is in (ISO 639-1 2-char code), mainly for internal tracking purposes, but you may find it useful if you use several languages
+	 * @param boolean $importimages Whether to do a one-off import and URL conversion of images referenced in the template
 	 * @return integer, or false on failure
 	 * @access public
 	 */
-	public function updatetemplate($templateid, $name, $html, $plain, $subject, $description = '', $generateplain = false) {
+	public function updatetemplate($templateid, $name, $html, $plain, $subject, $description = '', $generateplain = false, $language = 'en', $importimages = false) {
 		//Use a post request to cope with large content
-		$res = $this->dorequest('updatetemplate', array('templateid' => (integer)$templateid, 'name' => $name, 'plain' => $plain, 'html' => $html, 'subject' => $subject, 'description' => $description, 'generateplain' => $generateplain, 'language' => $language), NULL, true);
+		$res = $this->dorequest('updatetemplate', array('templateid' => (integer)$templateid, 'name' => $name, 'plain' => $plain, 'html' => $html, 'subject' => $subject, 'description' => $description, 'generateplain' => $generateplain, 'language' => $language, 'importimages' => ($importimages == true)), NULL, true);
 		return $res['status']; //Return the new template ID on success, or false if it failed
 	}
 
@@ -546,8 +553,8 @@ class SmartmessagesAPI {
 	 * @return integer, or false on failure
 	 * @access public
 	 */
-	public function addtemplatefromurl($name, $url, $subject, $description = '') {
-		$res = $this->dorequest('addtemplatefromurl', array('name' => $name, 'url' => $url, 'subject' => $subject, 'description' => $description));
+	public function addtemplatefromurl($name, $url, $subject, $description = '', $importimages = false) {
+		$res = $this->dorequest('addtemplatefromurl', array('name' => $name, 'url' => $url, 'subject' => $subject, 'description' => $description, 'importimages' => ($importimages == true)));
 		return ($res['status']?$res['templateid']:false); //Return the new template ID on success, or false if it failed
 	}
 
@@ -579,7 +586,6 @@ class SmartmessagesAPI {
 		if (!empty($this->accesskey)) {
 			$params['accesskey'] = $this->accesskey;
 		}
-		$url = '';
 		if (empty($urloverride)) {
 			if (empty($this->endpoint)) {
 				//We can't connect
@@ -633,11 +639,15 @@ class SmartmessagesAPI {
 	}
 
 	/**
-	* Submit a multipart POST request - like a form submission with FILE attachments
-	* Adapted from do_post_request written by dresel at gmx dot at and Wez Furlong
-	* @link http://uk2.php.net/manual/en/function.stream-context-create.php#90411
-	* @link http://netevil.org/blog/2006/nov/http-post-from-php-without-curl
-	*/
+	 * Submit a multipart POST request - like a form submission with FILE attachments
+	 * Adapted from do_post_request written by dresel at gmx dot at and Wez Furlong
+	 * @link http://uk2.php.net/manual/en/function.stream-context-create.php#90411
+	 * @link http://netevil.org/blog/2006/nov/http-post-from-php-without-curl
+	 * @param $url
+	 * @param $postdata
+	 * @param array $files
+	 * @return string
+	 */
 	protected function do_post_request($url, $postdata, $files = array()) {
 		ini_set('arg_separator.output', '&');
 		$data = '';
@@ -652,7 +662,7 @@ class SmartmessagesAPI {
 		$data .= "--$boundary\n";
 
 		//Collect Filedata
-		foreach($files as $key => $file) {
+		foreach($files as $file) {
 			$filename = basename($file);
 			$data .= "Content-Disposition: form-data; name=\"$filename\"; filename=\"$filename\"\n";
 			$data .= "Content-Type: application/octet-stream\n"; //Could be anything, so just upload as raw binary stuff

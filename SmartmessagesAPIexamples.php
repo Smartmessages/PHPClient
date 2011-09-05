@@ -14,7 +14,7 @@
 /**
  * Include API class
  */
-require 'SmartmessagesAPI.class.phps';
+require 'SmartmessagesAPI.class.php';
 
 /**
  * @var string $baseurl the root location of all API calls
@@ -84,11 +84,15 @@ try {
 	//Manage templates
 	$templates = $sm->gettemplates(true);
 	$sm->gettemplate(key($templates));
-	$t1 = $sm->addtemplate('apitest', '<html><head></head><body><h1>HTML</h1></body></html>', 'plain', 'subject', 'test template', false);
+	//Create a new template
+	$t1 = $sm->addtemplate('apitest', '<html><head></head><body><h1>HTML</h1></body></html>', 'plain', 'subject', 'test template', false, false);
 	$t2 = $sm->addtemplatefromurl('apitest url', 'http://www.google.com/', 'mysubject', 'Grabbed from google');
+	//Update the template we created earlier by adding an image and asking it to import the image and rewrite its URL
+	$t1 = $sm->updatetemplate('apitest', '<html><head></head><body><h1>HTML <img alt="Butterfly" src="http://www.smartmessages.net/images/butterfly.png"></h1></body></html>', 'plain', 'subject', 'test template', false, true);
 	$sm->gettemplate($t1);
 	$sm->gettemplate($t2);
-	$sm->deletetemplate($t1);
+	//Clean up
+	$sm->deletetemplate($t2);
 	$sm->deletetemplate($t1);
 
 	//Get / Set Callback URL
