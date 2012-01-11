@@ -145,7 +145,7 @@ try {
 	$unsubs = $sm->getlistunsubs($testlistid);
 	echo "<p>Unsubscribes:</p>\n<ul>\n";
 	foreach($unsubs as $unsub) {
-		echo "<li>$unsub</li>\n";
+		echo "<li>{$unsub['address']}</li>\n";
 	}
 	echo "</ul>\n";
 
