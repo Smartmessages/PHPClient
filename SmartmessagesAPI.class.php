@@ -154,6 +154,27 @@ class SmartmessagesAPI {
 	}
 
 	/**
+	 * Download a complete mailing list
+	 * Gets a complete list of recipients on a mailing list. If the ascsv parameter is supplied and true, results will be provided in CSV format,
+	 * which is smaller, faster and easier to handle (just save it directly to a file) than other formats.
+	 * We strongly recommend that you use the ascsv option as the response can be extremely large in PHP, JSON or XML formats,
+	 * extending to hundreds of megabytes for large lists, taking a correspondingly long time to download, and possibly causing memory problems
+	 * in client code. For this reason, this function defaults to CSV format.
+	 * @param integer $listid The ID of the list to fetch
+	 * @param boolean $ascsv Whether to get the list as CSV, as opposed to the currently selected format (e.g. JSON or XML)
+	 * @return string|array
+	 * @access public
+	 */
+	public function getlist($listid, $ascsv = true) {
+		$res = $this->dorequest('getlist', array('listid' => (integer)$listid, 'ascsv' => (boolean)$ascsv), '', false, array(), $ascsv);
+		if ($ascsv) {
+			return $res;
+		} else {
+			return $res['list'];
+		}
+	}
+
+	/**
 	 * Add a mailing list
 	 * @param string $name The name of the new list (max 100 chars)
 	 * @param string $description The description of the new list (max 255 chars)
@@ -580,7 +601,7 @@ class SmartmessagesAPI {
 	 * @param array $files An array of local filenames to attach to a POST request
 	 * @return mixed Whatever comes back from the API call (decoded)
 	 */
-	protected function dorequest($command, $params = array(), $urloverride = '', $post = false, $files = array()) {
+	protected function dorequest($command, $params = array(), $urloverride = '', $post = false, $files = array(), $returnraw = false) {
 		ini_set('arg_separator.output', '&');
 		//All commands except login need an accesskey
 		if (!empty($this->accesskey)) {
@@ -613,6 +634,9 @@ class SmartmessagesAPI {
 			$response = file_get_contents($url);
 		}
 		//If you want to support response types other than serialised PHP, you'll need to write your own, though php is obviously the best fit since we are in it already!
+		if ($returnraw) { //Return undecoded response if that was asked for
+			return $response;
+		}
 		$response = unserialize($response);
 		if (array_key_exists('status', $response)) {
 			$this->laststatus = ($response['status'] == true);
