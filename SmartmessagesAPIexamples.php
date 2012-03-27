@@ -198,17 +198,25 @@ try {
 	$list = $sm->getlist($testlistid, true);
 	var_dump($list);
 
+	//Get unsubscribes
+	$unsubs = $sm->getlistunsubs($testlistid);
+	echo "<p>Unsubscribes:</p>\n<ul>\n";
+	foreach($unsubs as $unsub) {
+		echo "<li>{$unsub['address']}</li>\n";
+	}
+	echo "</ul>\n";
+
 	//Remove all subscribers from a list
 	//Disabled in this example to avoid accidental data loss
 	//$c = $sm->emptylist($testlistid);
 	//echo "Emptied list, deleting $c subscriptions<br />";
-	
+
 	//Send a mailshot
 	$mailshotid = 0;
 	//Note that you explicit permission to use this function; it's disabled by default.
 	//This line is commented out in this example code as it's dangerous to call it without being sure of your parameters
-	//- a single line of code could cause hundreds of thousands of messages to be sent!
-	//$mailshotid = $sm->sendmailshot($templates[0], $testlistid, 'API Send', $campaigns[0], 'API test subject', 'user@example.com', 'API Sender', 'subscriber@example.com', 'now', array());
+	//- this single line of code could cause hundreds of thousands of messages to be sent!
+	//$mailshotid = $sm->sendmailshot($templates[0], $testlistid, 'API Send', $campaigns[0], 'API test subject', 'user@example.com', 'API Sender', 'subscriber@example.com', 'now', false, array());
 
 	//Get data relating to a mailshot as CSVs
 	if ($mailshotid > 0) {
