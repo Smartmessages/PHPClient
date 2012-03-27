@@ -235,4 +235,3 @@ try {
 } catch (SmartmessagesAPIException $e) {
 	echo '<h1>Exception caught</h1><p>An error ('.$e->getCode().') occurred: '.$e->getMessage()."</p>\n";
 }
-?>

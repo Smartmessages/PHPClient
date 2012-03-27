@@ -115,6 +115,7 @@ class SmartmessagesAPI {
 	 * @param string $dear A preferred greeting that's not necessarily their actual name, such as 'Scooter', 'Mrs Smith', 'Mr President'
 	 * @param string $firstname
 	 * @param string $lastname
+	 * @throws SmartmessagesAPIException
 	 * @return boolean true if subscribe was successful
 	 * @access public
 	 */
@@ -131,6 +132,7 @@ class SmartmessagesAPI {
 	 * @see getlists()
 	 * @param string $address The email address
 	 * @param integer $listid The ID of the list to unsubscribe the user from
+	 * @throws SmartmessagesAPIException
 	 * @return boolean true if unsubscribe was successful
 	 * @access public
 	 */
@@ -217,6 +219,7 @@ class SmartmessagesAPI {
 	/**
 	 * Get info about a recipient
 	 * @param string $address The email address
+	 * @throws SmartmessagesAPIException
 	 * @return array Info about the user
 	 * @access public
 	 */
@@ -233,6 +236,7 @@ class SmartmessagesAPI {
 	 * @see getuserinfo()
 	 * @param string $address The email address
 	 * @param array $userinfo Array of user properties in the same format as returned by getuserinfo()
+	 * @throws SmartmessagesAPIException
 	 * @return boolean true on success
 	 * @access public
 	 */
@@ -271,6 +275,7 @@ class SmartmessagesAPI {
 	 * Any invalid or unknown names will be ignored
 	 * @see getfieldorder()
 	 * @param array $fields Simple array of field names
+	 * @throws SmartmessagesAPIException
 	 * @return array The array of field names that was set, after filtering
 	 * @access public
 	 */
@@ -286,6 +291,7 @@ class SmartmessagesAPI {
 	/**
 	 * Get a list of everyone that has unsubscribed from the specified mailing list
 	 * @param integer $listid
+	 * @throws SmartmessagesAPIException
 	 * @return array
 	 * @access public
 	 */
@@ -308,6 +314,7 @@ class SmartmessagesAPI {
 	 * @param boolean $definitive If set to true, overwrite any existing data in the fields included in the file, otherwise existing data will not be touched, but recipients will still be added to the list
 	 * @param boolean $replace Whether to empty the list before uploading this list (actually deletes anyone not in this upload so history is maintained)
 	 * @param boolean $fieldorderfirstline Set to true if the first line of the file contains field names
+	 * @throws SmartmessagesAPIException
 	 * @return integer|boolean On success, the upload ID for passing to getuploadinfo(), otherwise boolean false
 	 * @access public
 	 */
@@ -339,6 +346,7 @@ class SmartmessagesAPI {
 	 * @see uploadlist()
 	 * @param integer $listid The ID of the list the upload belongs to
 	 * @param integer $uploadid The ID of the upload (as returned from uploadlist())
+	 * @throws SmartmessagesAPIException
 	 * @return array A list of upload properties. Includes lists of bad or invalid addresses, source tracking field
 	 * @access public
 	 */
@@ -357,6 +365,7 @@ class SmartmessagesAPI {
 	 * @see uploadlist()
 	 * @see getuploadinfo()
 	 * @param integer $listid The ID of the list the upload belongs to
+	 * @throws SmartmessagesAPIException
 	 * @return array An array of uploads with properties for each.
 	 * @access public
 	 */
@@ -376,6 +385,7 @@ class SmartmessagesAPI {
 	 * @see uploadlist()
 	 * @param integer $listid The ID of the list the upload belongs to
 	 * @param integer $uploadid The ID of the upload (as returned from uploadlist())
+	 * @throws SmartmessagesAPIException
 	 * @return boolean true on success
 	 * @access public
 	 */
@@ -402,7 +412,8 @@ class SmartmessagesAPI {
 	 * Set the callback URL for your account
 	 * Read our support wiki for more details on this
 	 * @param string $url The URL of your callback script (this will be on YOUR web server, not ours)
- 	 * @return true on success
+	 * @throws SmartmessagesAPIException
+	 * @return boolean true on success
 	 * @access public
 	 */
 	public function setcallbackurl($url) {
@@ -825,4 +836,3 @@ class SmartmessagesAPI {
 
 class SmartmessagesAPIException extends Exception {
 }
-?>
