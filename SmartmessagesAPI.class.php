@@ -144,7 +144,25 @@ class SmartmessagesAPI {
 		return $res['status'];
 	}
 
-	/**
+  /**
+   * Delete an address from a list
+   * Does the same as unsubscribe, but without the associated semantics, simply deletes them from a list without notifications, creating suppressions etc
+   * @see getlists()
+   * @param string $address The email address
+   * @param integer $listid The ID of the list to delete the user from
+   * @throws SmartmessagesAPIException
+   * @return boolean true if deletion was successful
+   * @access public
+   */
+  public function deletesubscription($address, $listid) {
+    if (trim($address) == '' or (integer)$listid <= 0) {
+      throw new SmartmessagesAPIException('Invalid unsubscribe parameters');
+    }
+    $res = $this->dorequest('deletesubscription', array('address' => trim($address), 'listid' => (integer)$listid));
+    return $res['status'];
+  }
+
+  /**
 	 * Get the details of all the mailing lists in your account
 	 * @param boolean $showall Whether to get all lists or just those set to visible
 	 * @return array
