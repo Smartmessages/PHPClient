@@ -1,5 +1,6 @@
 tools:
-    php_sim: true
+    php_sim:
+        min_mass: 36
     php_pdepend: true
     php_analyzer: true
     php_code_coverage: false

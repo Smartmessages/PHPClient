@@ -912,8 +912,7 @@ class SmartmessagesAPI
      *      or an ISO-format UTC date ('yyyy-mm-dd hh:mm:ss')
      * @param boolean $continuous Is this a continuous mailshot? (never completes, existing subs are ignored,
      *      new subscriptions are sent a message immediately, ideal for 'welcome' messages)
-     * @param array $elements For future expansion; ignore for now
-     * @return integer of the new mailshot id, or false on failure
+     * @return integer|bool ID of the new mailshot id, or false on failure
      * @access public
      */
     public function sendmailshot(
@@ -926,8 +925,7 @@ class SmartmessagesAPI
         $fromname = '',
         $replyto = '',
         $when = 'now',
-        $continuous = false,
-        $elements = array()
+        $continuous = false
     ) {
         $res = $this->dorequest(
             'sendmailshot',
@@ -988,8 +986,8 @@ class SmartmessagesAPI
         //Make the request (must have fopen wrappers enabled)
         if ($this->debug) {
             echo "<h1>$verb Request (" . htmlspecialchars($command) . "):</h1><p>" . htmlspecialchars(
-                    $url
-                ) . "</p>\n";
+                $url
+            ) . "</p>\n";
         }
         if ($post) {
             $response = $this->doPostRequest($url, $params, $files);
