@@ -1,7 +1,7 @@
 #Smartmessages Client Libraries
 
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/Smartmessages/SmartmessagesClients/badges/quality-score.png?s=a779898df1a3796778b615b6dff9588eccc6156f)](https://scrutinizer-ci.com/g/Smartmessages/SmartmessagesClients/)
-Add scrutinizer status image
+
 This contains client libraries and example code for the [smartmessages.net](http://info.smartmessages.net/) email management service's public API.
 
 Currently we have libraries for PHP and .NET, but we'd welcome contributions for other languages.
