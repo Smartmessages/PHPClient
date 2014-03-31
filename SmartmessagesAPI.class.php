@@ -11,7 +11,6 @@
  * @link https://www.smartmessages.net/ Smartmessages mailing lists management
  * @link http://wiki.smartmessages.net/ Smartmessages user and developer documentation
  * @throws Exception|SmartmessagesAPIException
- * @version $Id: SmartmessagesAPI.class.phps 1736 2009-12-12 18:39:35Z marcus $
  */
 class SmartmessagesAPI
 {
@@ -990,7 +989,7 @@ class SmartmessagesAPI
                         $url
                     ) . "</p>\n";
             }
-            $response = $this->do_post_request($url, $params, $files);
+            $response = $this->doPostRequest($url, $params, $files);
         } else {
             if (!empty($params)) {
                 $url .= '?' . http_build_query($params);
@@ -1043,7 +1042,7 @@ class SmartmessagesAPI
      * @throws Exception
      * @return string
      */
-    protected function do_post_request($url, $postdata, $files = array())
+    protected function doPostRequest($url, $postdata, $files = array())
     {
         ini_set('arg_separator.output', '&');
         $data = '';
@@ -1082,13 +1081,13 @@ class SmartmessagesAPI
         }
 
         $ctx = stream_context_create($params);
-        $fp = fopen($url, 'rb', false, $ctx);
+        $fileh = fopen($url, 'rb', false, $ctx);
 
-        if (!$fp) {
+        if (!$fileh) {
             throw new Exception("Problem with $url, $php_errormsg");
         }
 
-        $response = @stream_get_contents($fp);
+        $response = @stream_get_contents($fileh);
         if ($response === false) {
             throw new Exception("Problem reading data from $url, $php_errormsg");
         }
@@ -1096,6 +1095,6 @@ class SmartmessagesAPI
     }
 }
 
-class SmartmessagesAPIException extends Exception
+class SmartmessagesAPIException extends \Exception
 {
 }

@@ -9,7 +9,6 @@
  * @copyright 2014 Synchromedia Limited
  * @link https://www.smartmessages.net/ Smartmessages mailing lists management
  * @link http://wiki.smartmessages.net/ Smartmessages user and developer documentation
- * @version $Id: SmartmessagesAPIexamples.phps 2117 2010-08-13 15:32:20Z marcus $
  */
 
 /**
