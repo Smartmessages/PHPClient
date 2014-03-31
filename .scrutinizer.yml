@@ -1,0 +1,20 @@
+tools:
+    php_sim: true
+    php_pdepend: true
+    php_analyzer: true
+    php_code_coverage: false
+    php_cpd: false
+    php_hhvm: true
+    php_code_sniffer:
+        enabled: true
+        command: phpcs
+        config:
+            standard: PSR2
+    php_mess_detector:
+        enabled: true
+        config:
+            rulesets:
+                - codesize
+                - unusedcode
+                - naming
+                - design
