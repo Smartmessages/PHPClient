@@ -100,6 +100,7 @@ try {
     $t2 = $sm->addtemplatefromurl('apitest url', 'http://www.google.com/', 'mysubject', 'Grabbed from google');
     //Update the template we created earlier by adding an image and asking it to import the image and rewrite its URL
     $t1 = $sm->updatetemplate(
+        $t1,
         'apitest',
         '<html><head></head><body><h1>HTML <img alt="Butterfly" src="http://www.smartmessages.net/images/butterfly.png"></h1></body></html>',
         'plain',
