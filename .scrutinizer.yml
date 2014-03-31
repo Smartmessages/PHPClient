@@ -7,7 +7,6 @@ tools:
     php_hhvm: true
     php_code_sniffer:
         enabled: true
-        command: phpcs
         config:
             standard: PSR2
     php_mess_detector:
