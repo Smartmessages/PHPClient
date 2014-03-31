@@ -55,9 +55,9 @@ try {
     //Create a campaign folder
     $cid = $smartmessages->addcampaign('api test campaign');
 
-    //$sm = new SmartmessagesAPI(false); //Create an API instance
+    //$smartmessages = new SmartmessagesAPI(false); //Create an API instance
     $smartmessages = new SmartmessagesAPI(true); //Create an API instance in debug mode (will produce debug output)
-    //$smartmessages = new SmartmessagesAPI;
+
     //Log in
     $smartmessages->login($user, $pass, $apikey, $baseurl);
 
