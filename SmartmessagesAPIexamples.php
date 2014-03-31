@@ -3,7 +3,8 @@
  * Smartmessages API example script
  *
  * Example script demonstrating all available Smartmessages API calls using the Smartmessages API wrapper class
- * Note that this script will not work as is - you will need to substitute your own login ID, password, API key and test list IDs in the variables below (or in an override file)
+ * Note that this script will not work as is - you will need to substitute your own login ID, password, API key
+ * and test list IDs in the variables below (or in an override file)
  * @author Marcus Bointon <marcus@synchromedia.co.uk>
  * @copyright 2014 Synchromedia Limited
  * @link https://www.smartmessages.net/ Smartmessages mailing lists management
@@ -98,12 +99,19 @@ try {
         false
     );
     //Create a new template by loading it from a URL
-    $template2_id = $smartmessages->addtemplatefromurl('apitest url', 'http://www.google.com/', 'mysubject', 'Grabbed from google');
+    $template2_id = $smartmessages->addtemplatefromurl(
+        'apitest url',
+        'http://www.google.com/',
+        'mysubject',
+        'Grabbed from google'
+    );
     //Update the template we created earlier by adding an image and asking it to import the image and rewrite its URL
     $template1_id = $smartmessages->updatetemplate(
         $template1_id,
         'apitest',
-        '<html><head></head><body><h1>HTML <img alt="Butterfly" src="http://www.smartmessages.net/images/butterfly.png"></h1></body></html>',
+        '<html><head></head><body>'.
+            '<h1>HTML <img alt="Butterfly" src="http://www.smartmessages.net/images/butterfly.png">'.
+            '</h1></body></html>',
         'plain',
         'subject',
         'test template',
@@ -243,10 +251,23 @@ try {
 
     //Send a mailshot
     $mailshotid = 0;
-    //Note that you explicit permission to use this function; it's disabled by default.
-    //This line is commented out in this example code as it's dangerous to call it without being sure of your parameters
-    //- this single line of code could cause hundreds of thousands of messages to be sent!
-    //$mailshotid = $sm->sendmailshot($templates[0], $testlistid, 'API Send', $campaigns[0], 'API test subject', 'user@example.com', 'API Sender', 'subscriber@example.com', 'now', false, array());
+    //This is commented out in this example code as it's dangerous to call it without being sure of your parameters
+    //- this single call could cause hundreds of thousands of messages to be sent!
+    /*
+    $mailshotid = $sm->sendmailshot(
+        $templates[0],
+        $testlistid,
+        'API Send',
+        $campaigns[0],
+        'API test subject',
+        'user@example.com',
+        'API Sender',
+        'subscriber@example.com',
+        'now',
+        false,
+        array()
+    );
+    */
 
     //Get data relating to a mailshot as CSVs
     if ($mailshotid > 0) {

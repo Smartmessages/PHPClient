@@ -16,53 +16,56 @@
 class SmartmessagesAPI
 {
     /**
-     * @var string $accesskey The authenticated access key for this session
+     * The authenticated access key for this session.
+     * @type string
      */
     protected $accesskey = '';
     /**
-     * @var string $endpoint The API endpoint to direct requests at, set during login
+     * The API endpoint to direct requests at, set during login.
+     * @type string
      */
     protected $endpoint = '';
     /**
-     *
-     * @var boolean $connected Whether we have logged in successfully
+     * Whether we have logged in successfully.
+     * @type boolean
      */
     public $connected = false;
     /**
-     *
-     * @var integer $expires Timestamp of when this session expires
+     * Timestamp of when this session expires.
+     * @type integer
      */
     public $expires = 0;
     /**
-     *
-     * @var string $accountname The user name used to log in to the API, usually an email address
+     * The user name used to log in to the API, usually an email address.
+     * @type string
      */
     public $accountname = '';
     /**
-     *
-     * @var boolean $laststatus The most recent status message received from the API - true for success, false otherwise
+     * The most recent status value received from the API - true for success, false otherwise.
+     * @type boolean
      */
     public $laststatus = true;
     /**
-     *
-     * @var boolean $errorcode The most recent error code received. 0 if no error.
+     * The most recent error code received. 0 if no error.
+     * @type boolean
      */
     public $errorcode = 0;
     /**
-     *
-     * @var string $message The most recent message received in an API response. Does not necessarily indicate an error, may have some other informational content.
+     * The most recent message received in an API response.
+     * Does not necessarily indicate an error, may have some other informational content.
+     * @type string
      */
     public $message = '';
     /**
-     *
-     * @var boolean $debug Whether to run in debug mode. With this enabled, all requests and responses generate descriptive output
+     * Whether to run in debug mode.
+     * With this enabled, all requests and responses generate descriptive output
+     * @type boolean
      */
     public $debug = false;
 
     /**
      * Constructor, creates a new Smartmessages API instance
      * @param boolean $debug Whether to activate debug mode
-     *
      */
     public function __construct($debug = false)
     {
@@ -121,7 +124,8 @@ class SmartmessagesAPI
      * @see getlists()
      * @param string $address The email address
      * @param integer $listid The ID of the list to subscribe the user to
-     * @param string $dear A preferred greeting that's not necessarily their actual name, such as 'Scooter', 'Mrs Smith', 'Mr President'
+     * @param string $dear A preferred greeting that's not necessarily their actual name,
+     *  such as 'Scooter', 'Mrs Smith', 'Mr President'
      * @param string $firstname
      * @param string $lastname
      * @throws SmartmessagesAPIException
@@ -166,7 +170,8 @@ class SmartmessagesAPI
 
     /**
      * Delete an address from a list.
-     * Does the same as unsubscribe, but without the associated semantics, simply deletes them from a list without notifications, creating suppressions etc
+     * Does the same as unsubscribe, but without the associated semantics,
+     * simply deletes them from a list without notifications, creating suppressions etc
      * @see getlists()
      * @param string $address The email address
      * @param integer $listid The ID of the list to delete the user from
@@ -179,7 +184,13 @@ class SmartmessagesAPI
         if (trim($address) == '' or (integer)$listid <= 0) {
             throw new SmartmessagesAPIException('Invalid delete subscription parameters');
         }
-        $res = $this->dorequest('deletesubscription', array('address' => trim($address), 'listid' => (integer)$listid));
+        $res = $this->dorequest(
+            'deletesubscription',
+            array(
+                'address' => trim($address),
+                'listid' => (integer)$listid
+            )
+        );
         return $res['status'];
     }
 
@@ -197,13 +208,16 @@ class SmartmessagesAPI
 
     /**
      * Download a complete mailing list.
-     * Gets a complete list of recipients on a mailing list. If the ascsv parameter is supplied and true, results will be provided in CSV format,
+     * Gets a complete list of recipients on a mailing list.
+     * If the ascsv parameter is supplied and true, results will be provided in CSV format,
      * which is smaller, faster and easier to handle (just save it directly to a file) than other formats.
-     * We strongly recommend that you use the ascsv option as the response can be extremely large in PHP, JSON or XML formats,
-     * extending to hundreds of megabytes for large lists, taking a correspondingly long time to download, and possibly causing memory problems
+     * We strongly recommend that you use the ascsv option as the response can be extremely large
+     * in PHP, JSON or XML formats, extending to hundreds of megabytes for large lists,
+     * taking a correspondingly long time to download, and possibly causing memory problems
      * in client code. For this reason, this function defaults to CSV format.
      * @param integer $listid The ID of the list to fetch
-     * @param boolean $ascsv Whether to get the list as CSV, as opposed to the currently selected format (e.g. JSON or XML)
+     * @param boolean $ascsv Whether to get the list as CSV,
+     *      as opposed to the currently selected format (e.g. JSON or XML)
      * @return string|array
      * @access public
      */
@@ -377,10 +391,14 @@ class SmartmessagesAPI
      * @see getfieldorder()
      * @see getuploadinfo()
      * @param integer $listid The ID of the list to upload into
-     * @param string $listfilename A path to a local file containing your mailing list in CSV format (may also be zipped)
-     * @param string $source For audit trail purposes, you must populate this with a note of where this list came from
-     * @param boolean $definitive If set to true, overwrite any existing data in the fields included in the file, otherwise existing data will not be touched, but recipients will still be added to the list
-     * @param boolean $replace Whether to empty the list before uploading this list (actually deletes anyone not in this upload so history is maintained)
+     * @param string $listfilename A path to a local file containing your mailing list in CSV format
+     *      (may also be zipped)
+     * @param string $source For audit trail purposes, you must populate this with a description
+     *      of where this list came from
+     * @param boolean $definitive If set to true, overwrite any existing data in the fields included
+     *      in the file, otherwise existing data will not be touched, but recipients will still be added to the list
+     * @param boolean $replace Whether to empty the list before uploading this list
+     *      (actually deletes anyone not in this upload so history is maintained)
      * @param boolean $fieldorderfirstline Set to true if the first line of the file contains field names
      * @throws SmartmessagesAPIException
      * @return integer|boolean On success, the upload ID for passing to getuploadinfo(), otherwise boolean false
@@ -436,7 +454,13 @@ class SmartmessagesAPI
         if ((integer)$listid <= 0 or (integer)$uploadid <= 0) {
             throw new SmartmessagesAPIException('Invalid getuploadinfo parameters');
         }
-        $res = $this->dorequest('getuploadinfo', array('listid' => (integer)$listid, 'uploadid' => (integer)$uploadid));
+        $res = $this->dorequest(
+            'getuploadinfo',
+            array(
+                'listid' => (integer)$listid,
+                'uploadid' => (integer)$uploadid
+            )
+        );
         return $res['upload'];
     }
 
@@ -477,7 +501,13 @@ class SmartmessagesAPI
         if ((integer)$listid <= 0 or (integer)$uploadid <= 0) {
             throw new SmartmessagesAPIException('Invalid getuploadinfo parameters');
         }
-        $res = $this->dorequest('cancelupload', array('listid' => (integer)$listid, 'uploadid' => (integer)$uploadid));
+        $res = $this->dorequest(
+            'cancelupload',
+            array(
+                'listid' => (integer)$listid,
+                'uploadid' => (integer)$uploadid
+            )
+        );
         return $res['status'];
     }
 
@@ -512,7 +542,8 @@ class SmartmessagesAPI
 
     /**
      * Simple address validator.
-     * It's more efficient to use a function on your own site to do this, but using this will ensure that any address you add to a list will also be accepted by us
+     * It's more efficient to use a function on your own site to do this, but using this will ensure that
+     * any address you add to a list will also be accepted by us
      * If you encounter an address that we reject that you think we shouldn't, please tell us!
      * Read our support wiki for more details on this
      * @param string $address
@@ -558,7 +589,13 @@ class SmartmessagesAPI
      */
     public function updatecampaign($campaignid, $name)
     {
-        $res = $this->dorequest('updatecampaign', array('campaignid' => (integer)$campaignid, 'name' => trim($name)));
+        $res = $this->dorequest(
+            'updatecampaign',
+            array(
+                'campaignid' => (integer)$campaignid,
+                'name' => trim($name)
+            )
+        );
         return $res['status'];
     }
 
@@ -611,7 +648,13 @@ class SmartmessagesAPI
      */
     public function getmailshotclicks($mailshotid, $ascsv = false)
     {
-        $res = $this->dorequest('getmailshotclicks', array('mailshotid' => $mailshotid, 'ascsv' => ($ascsv == true)));
+        $res = $this->dorequest(
+            'getmailshotclicks',
+            array(
+                'mailshotid' => $mailshotid,
+                'ascsv' => ($ascsv == true)
+            )
+        );
         if ($ascsv) {
             return $res;
         } else {
@@ -628,7 +671,13 @@ class SmartmessagesAPI
      */
     public function getmailshotopens($mailshotid, $ascsv = false)
     {
-        $res = $this->dorequest('getmailshotopens', array('mailshotid' => $mailshotid, 'ascsv' => ($ascsv == true)));
+        $res = $this->dorequest(
+            'getmailshotopens',
+            array(
+                'mailshotid' => $mailshotid,
+                'ascsv' => ($ascsv == true)
+            )
+        );
         if ($ascsv) {
             return $res;
         } else {
@@ -645,7 +694,13 @@ class SmartmessagesAPI
      */
     public function getmailshotunsubs($mailshotid, $ascsv = false)
     {
-        $res = $this->dorequest('getmailshotunsubs', array('mailshotid' => $mailshotid, 'ascsv' => ($ascsv == true)));
+        $res = $this->dorequest(
+            'getmailshotunsubs',
+            array(
+                'mailshotid' => $mailshotid,
+                'ascsv' => ($ascsv == true)
+            )
+        );
         if ($ascsv) {
             return $res;
         } else {
@@ -662,7 +717,13 @@ class SmartmessagesAPI
      */
     public function getmailshotbounces($mailshotid, $ascsv = false)
     {
-        $res = $this->dorequest('getmailshotbounces', array('mailshotid' => $mailshotid, 'ascsv' => ($ascsv == true)));
+        $res = $this->dorequest(
+            'getmailshotbounces',
+            array(
+                'mailshotid' => $mailshotid,
+                'ascsv' => ($ascsv == true)
+            )
+        );
         if ($ascsv) {
             return $res;
         } else {
@@ -706,9 +767,12 @@ class SmartmessagesAPI
      * @param string $plain The plain text version of the template
      * @param string $subject The default subject template
      * @param string $description A plain-text description of the template
-     * @param boolean $generateplain Whether to generate a plain text version from the HTML version (if set, will ignore the value of $plain)
-     * @param string $language What language this template is in (ISO 639-1 2-char code), mainly for internal tracking purposes, but you may find it useful if you use several languages
-     * @param boolean $importimages Whether to do a one-off import and URL conversion of images referenced in the template
+     * @param boolean $generateplain Whether to generate a plain text version from the HTML version
+     *      (if set, will ignore the value of $plain)
+     * @param string $language What language this template is in (ISO 639-1 2-char code),
+     *      mainly for internal tracking purposes, but you may find it useful if you use several languages
+     * @param boolean $importimages Whether to do a one-off import and URL conversion
+     *      of images referenced in the template
      * @return integer, or false on failure
      * @access public
      */
@@ -750,9 +814,12 @@ class SmartmessagesAPI
      * @param string $plain The plain text version of the template
      * @param string $subject The default subject template
      * @param string $description A plain-text description of the template
-     * @param boolean $generateplain Whether to generate a plain text version from the HTML version (if set, will ignore the value of $plain), defaults to false
-     * @param string $language What language this template is in (ISO 639-1 2-char code), mainly for internal tracking purposes, but you may find it useful if you use several languages
-     * @param boolean $importimages Whether to do a one-off import and URL conversion of images referenced in the template
+     * @param boolean $generateplain Whether to generate a plain text version from the HTML version
+     *      (if set, will ignore the value of $plain), defaults to false
+     * @param string $language What language this template is in (ISO 639-1 2-char code),
+     *      mainly for internal tracking purposes, but you may find it useful if you use several languages
+     * @param boolean $importimages Whether to do a one-off import and URL conversion
+     *      of images referenced in the template
      * @return integer, or false on failure
      * @access public
      */
@@ -811,12 +878,14 @@ class SmartmessagesAPI
                 'importimages' => ($importimages == true)
             )
         );
-        return ($res['status'] ? $res['templateid'] : false); //Return the new template ID on success, or false if it failed
+        //Return the new template ID on success, or false if it failed
+        return ($res['status'] ? $res['templateid'] : false);
     }
 
     /**
      * Delete a template.
-     * Note that deleting a template will also delete any mailshots that used it, and all records and reports relating to it
+     * Note that deleting a template will also delete any mailshots that used it,
+     * and all records and reports relating to it
      * To delete inherited templates you need to connect using the account they are inherited from
      * @param integer $templateid The template id to delete
      * @return boolean
@@ -839,8 +908,10 @@ class SmartmessagesAPI
      * @param string $fromaddr The email address the mailshot will be sent from
      * @param string $fromname The name the mailshot will be sent from
      * @param string $replyto If you want replies to go somewhere other than the from address, supply one here
-     * @param string $when When to send the mailshot, the string 'now' (or empty) for immediate send, or an ISO-format date ('yyyy-mm-dd hh:mm:ss')
-     * @param boolean $continuous Is this a continuous mailshot? (never completes, existing subs are ignored, new subscriptions are sent a message immediately, ideal for 'welcome' messages)
+     * @param string $when When to send the mailshot, the string 'now' (or empty) for immediate send,
+     *      or an ISO-format UTC date ('yyyy-mm-dd hh:mm:ss')
+     * @param boolean $continuous Is this a continuous mailshot? (never completes, existing subs are ignored,
+     *      new subscriptions are sent a message immediately, ideal for 'welcome' messages)
      * @param array $elements For future expansion; ignore for now
      * @return integer of the new mailshot id, or false on failure
      * @access public
@@ -931,7 +1002,8 @@ class SmartmessagesAPI
             }
             $response = file_get_contents($url);
         }
-        //If you want to support response types other than serialised PHP, you'll need to write your own, though php is obviously the best fit since we are in it already!
+        //If you want to support response types other than serialised PHP, you'll need to write your own,
+        //though php is obviously the best fit since we are in it already!
         if ($returnraw) { //Return undecoded response if that was asked for
             return $response;
         }
@@ -989,7 +1061,7 @@ class SmartmessagesAPI
         foreach ($files as $file) {
             $filename = basename($file);
             $data .= "Content-Disposition: form-data; name=\"$filename\"; filename=\"$filename\"\n";
-            $data .= "Content-Type: application/octet-stream\n"; //Could be anything, so just upload as raw binary stuff
+            $data .= "Content-Type: application/octet-stream\n"; //Could be anything, so just upload as raw binary
             $data .= "Content-Transfer-Encoding: binary\n\n";
             $data .= file_get_contents($file) . "\n";
             $data .= "--$boundary--\n";
