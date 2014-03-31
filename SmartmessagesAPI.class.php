@@ -801,7 +801,8 @@ class SmartmessagesAPI
             null,
             true
         );
-        return ($res['status'] ? $res['templateid'] : false); //Return the new template ID on success, or false if it failed
+        //Return the new template ID on success, or false if it failed
+        return ($res['status'] ? $res['templateid'] : false);
     }
 
     /**
@@ -944,7 +945,8 @@ class SmartmessagesAPI
                 'elements' => $elements
             )
         );
-        return ($res['status'] ? $res['mailshotid'] : false); //Return the new template ID on success, or false if it failed
+        //Return the new mailshot ID on success, or false if it failed
+        return ($res['status'] ? $res['mailshotid'] : false);
     }
 
     /**
@@ -982,22 +984,18 @@ class SmartmessagesAPI
             $url = $urloverride;
         }
         $url .= $command;
+        $verb = ($post?'POST':'GET');
         //Make the request (must have fopen wrappers enabled)
+        if ($this->debug) {
+            echo "<h1>$verb Request (" . htmlspecialchars($command) . "):</h1><p>" . htmlspecialchars(
+                    $url
+                ) . "</p>\n";
+        }
         if ($post) {
-            if ($this->debug) {
-                echo "<h1>POST Request (" . htmlspecialchars($command) . "):</h1><p>" . htmlspecialchars(
-                        $url
-                    ) . "</p>\n";
-            }
             $response = $this->doPostRequest($url, $params, $files);
         } else {
             if (!empty($params)) {
                 $url .= '?' . http_build_query($params);
-            }
-            if ($this->debug) {
-                echo "<h1>GET Request (" . htmlspecialchars($command) . "):</h1><p>" . htmlspecialchars(
-                        $url
-                    ) . "</p>\n";
             }
             $response = file_get_contents($url);
         }
