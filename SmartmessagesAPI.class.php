@@ -939,8 +939,7 @@ class SmartmessagesAPI
                 'fromname' => $fromname,
                 'replyto' => $replyto,
                 'when' => $when,
-                'continuous' => (boolean)$continuous,
-                'elements' => $elements
+                'continuous' => (boolean)$continuous
             )
         );
         //Return the new mailshot ID on success, or false if it failed
