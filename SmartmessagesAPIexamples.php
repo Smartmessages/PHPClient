@@ -109,8 +109,8 @@ try {
         $template1_id,
         'apitest',
         '<html><head></head><body>'.
-            '<h1>HTML <img alt="Butterfly" src="http://www.smartmessages.net/images/butterfly.png">'.
-            '</h1></body></html>',
+        '<h1>HTML <img alt="Butterfly" src="http://www.smartmessages.net/images/butterfly.png">'.
+        '</h1></body></html>',
         'plain',
         'subject',
         'test template',
