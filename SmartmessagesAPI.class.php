@@ -1001,7 +1001,11 @@ class SmartmessagesAPI
         if ($returnraw) { //Return undecoded response if that was asked for
             return $response;
         }
-        $response = unserialize($response);
+        $response = @unserialize($response);
+        if ($response === false) {
+            $this->message = 'Failed to unserialize PHP data';
+            throw new SmartmessagesAPIException($this->message, 0);
+        }
         if (array_key_exists('status', $response)) {
             $this->laststatus = ($response['status'] == true);
         }
@@ -1016,9 +1020,9 @@ class SmartmessagesAPI
             $this->errorcode = '';
         }
         if ($this->debug) {
-            echo "<h1>Response:</h1><p>";
-            var_dump($response);
-            echo "</p>\n";
+            echo "<h1>Response:</h1><div><pre>";
+            echo htmlentities(var_export($response, true), ENT_QUOTES, 'UTF-8');
+            echo "</pre></div>\n";
         }
         if (!$this->laststatus) {
             throw new SmartmessagesAPIException($this->message, $this->errorcode);
@@ -1071,7 +1075,7 @@ class SmartmessagesAPI
 
         if ($this->debug) {
             echo "<h2>POST body:</h2><pre>";
-            echo htmlentities(substr($data, 0, 8192)); //Limit size of debug output
+            echo htmlentities(substr($data, 0, 8192), ENT_QUOTES, 'UTF-8'); //Limit size of debug output
             echo "</pre>\n";
         }
 
