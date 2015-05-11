@@ -9,7 +9,7 @@ Please feel free to suggest modifications, submit tickets and pull requests in [
 You can load this class via composer:
 
 ```
-composer require smartmessages/client
+composer require smartmessages/phpclient
 ```
 Complete documentation for the API can be found in [our help wiki](https://wiki.smartmessages.net/#API)
 
