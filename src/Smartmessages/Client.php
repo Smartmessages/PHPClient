@@ -1,60 +1,76 @@
 <?php
-/*
+/**
  * Smartmessages SmartmessagesAPI and SmartmessagesAPIException classes
+ * PHP Version 5.3
+ * @package Smartmessages\Client
+ * @author Marcus Bointon <marcus@synchromedia.co.uk>
+ * @copyright 2015 Synchromedia Limited
+ * @license MIT http://opensource.org/licenses/MIT
+ * @link https://github.com/Smartmessages/PHPClient
  */
 
+namespace Smartmessages;
+
 /**
- * The Smartmessages API class
- *
+ * The Smartmessages API Client class
+ * @package Smartmessages\Client
  * @author Marcus Bointon <marcus@synchromedia.co.uk>
- * @copyright 2014 Synchromedia Limited
- * @link https://www.smartmessages.net/ Smartmessages mailing lists management
- * @link http://wiki.smartmessages.net/ Smartmessages user and developer documentation
- * @throws Exception|SmartmessagesAPIException
+ * @copyright 2015 Synchromedia Limited
+ * @license MIT http://opensource.org/licenses/MIT
+ * @link https://info.smartmessages.net/ Smartmessages mailing lists management
+ * @link https://wiki.smartmessages.net/ Smartmessages documentation
  */
-class SmartmessagesAPI
+class Client
 {
     /**
      * The authenticated access key for this session.
      * @type string
      */
-    protected $accesskey = '';
+    protected $accessKey = '';
+
     /**
      * The API endpoint to direct requests at, set during login.
      * @type string
      */
     protected $endpoint = '';
+
     /**
      * Whether we have logged in successfully.
      * @type boolean
      */
-    public $connected = false;
+    protected $connected = false;
+
     /**
      * Timestamp of when this session expires.
      * @type integer
      */
-    public $expires = 0;
+    protected $expires = 0;
+
     /**
      * The user name used to log in to the API, usually an email address.
      * @type string
      */
-    public $accountname = '';
+    protected $accountName = '';
+
     /**
      * The most recent status value received from the API - true for success, false otherwise.
      * @type boolean
      */
-    public $laststatus = true;
+    protected $lastStatus = true;
+
     /**
      * The most recent error code received. 0 if no error.
      * @type boolean
      */
-    public $errorcode = 0;
+    protected $errorCode = 0;
+
     /**
      * The most recent message received in an API response.
      * Does not necessarily indicate an error, may have some other informational content.
      * @type string
      */
     public $message = '';
+
     /**
      * Whether to run in debug mode.
      * With this enabled, all requests and responses generate descriptive output
@@ -68,7 +84,7 @@ class SmartmessagesAPI
      */
     public function __construct($debug = false)
     {
-        $this->debug = $debug;
+        $this->debug = (boolean)$debug;
     }
 
     /**
@@ -83,60 +99,62 @@ class SmartmessagesAPI
      */
     public function login($user, $pass, $apikey, $baseurl = 'https://www.smartmessages.net/api/')
     {
-        $response = $this->dorequest(
+        $response = $this->doRequest(
             'login',
             array('username' => $user, 'password' => $pass, 'apikey' => $apikey, 'outputformat' => 'php'),
             $baseurl
         );
         $this->connected = true;
-        $this->accesskey = $response['accesskey'];
+        $this->accessKey = $response['accesskey'];
         $this->endpoint = $response['endpoint'];
         $this->expires = $response['expires'];
-        $this->accountname = $response['accountname'];
+        $this->accountName = $response['accountname'];
         return true;
     }
 
     /**
      * Close a session with the Smartmessages API.
      * @access public
+     * @return void
      */
     public function logout()
     {
-        $this->dorequest('logout');
+        $this->doRequest('logout');
         $this->connected = false;
-        $this->accesskey = '';
+        $this->accessKey = '';
         $this->expires = 0;
     }
 
     /**
      * Does nothing, but keeps a connection open and extends the session expiry time.
      * @access public
+     * @return boolean
      */
     public function ping()
     {
-        $res = $this->dorequest('ping');
+        $res = $this->doRequest('ping');
         return $res['status'];
     }
 
     /**
      * Subscribe an address to a list.
-     * @see getlists()
+     * @see getLists()
      * @param string $address The email address
      * @param integer $listid The ID of the list to subscribe the user to
      * @param string $dear A preferred greeting that's not necessarily their actual name,
      *  such as 'Scooter', 'Mrs Smith', 'Mr President'
-     * @param string $firstname
-     * @param string $lastname
-     * @throws SmartmessagesAPIException
-     * @return boolean true if subscribe was successful
+     * @param string $firstname The subscriber's first name
+     * @param string $lastname The subscriber's first name
+     * @return boolean
+     * @throws ParameterException
      * @access public
      */
     public function subscribe($address, $listid, $dear = '', $firstname = '', $lastname = '')
     {
         if (trim($address) == '' or (integer)$listid <= 0) {
-            throw new SmartmessagesAPIException('Invalid subscribe parameters');
+            throw new ParameterException('Invalid subscribe parameters');
         }
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'subscribe',
             array(
                 'address' => trim($address),
@@ -151,19 +169,19 @@ class SmartmessagesAPI
 
     /**
      * Unsubscribe an address from a list.
-     * @see getlists()
+     * @see getLists()
      * @param string $address The email address
      * @param integer $listid The ID of the list to unsubscribe the user from
-     * @throws SmartmessagesAPIException
-     * @return boolean true if unsubscribe was successful
+     * @return boolean
+     * @throws ParameterException
      * @access public
      */
     public function unsubscribe($address, $listid)
     {
         if (trim($address) == '' or (integer)$listid <= 0) {
-            throw new SmartmessagesAPIException('Invalid unsubscribe parameters');
+            throw new ParameterException('Invalid unsubscribe parameters');
         }
-        $res = $this->dorequest('unsubscribe', array('address' => trim($address), 'listid' => (integer)$listid));
+        $res = $this->doRequest('unsubscribe', array('address' => trim($address), 'listid' => (integer)$listid));
         return $res['status'];
     }
 
@@ -171,20 +189,20 @@ class SmartmessagesAPI
      * Delete an address from a list.
      * Does the same as unsubscribe, but without the associated semantics,
      * simply deletes them from a list without notifications, creating suppressions etc
-     * @see getlists()
+     * @see getLists()
      * @param string $address The email address
      * @param integer $listid The ID of the list to delete the user from
-     * @throws SmartmessagesAPIException
-     * @return boolean true if deletion was successful
+     * @return bool
+     * @throws ParameterException
      * @access public
      */
-    public function deletesubscription($address, $listid)
+    public function deleteSubscription($address, $listid)
     {
         if (trim($address) == '' or (integer)$listid <= 0) {
-            throw new SmartmessagesAPIException('Invalid delete subscription parameters');
+            throw new ParameterException('Invalid delete subscription parameters');
         }
-        $res = $this->dorequest(
-            'deletesubscription',
+        $res = $this->doRequest(
+            'deleteSubscription',
             array(
                 'address' => trim($address),
                 'listid' => (integer)$listid
@@ -199,10 +217,21 @@ class SmartmessagesAPI
      * @return array
      * @access public
      */
-    public function getlists($showall = false)
+    public function getLists($showall = false)
     {
-        $res = $this->dorequest('getlists', array('showall' => (boolean)$showall));
+        $res = $this->doRequest('getlists', array('showall' => (boolean)$showall));
         return $res['mailinglists'];
+    }
+
+    /**
+     * Get the details of your designated test list.
+     * @return array
+     * @access public
+     */
+    public function getTestList()
+    {
+        $res = $this->doRequest('gettestlist');
+        return $res;
     }
 
     /**
@@ -220,9 +249,9 @@ class SmartmessagesAPI
      * @return string|array
      * @access public
      */
-    public function getlist($listid, $ascsv = true)
+    public function getList($listid, $ascsv = true)
     {
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'getlist',
             array('listid' => (integer)$listid, 'ascsv' => (boolean)$ascsv),
             '',
@@ -245,9 +274,9 @@ class SmartmessagesAPI
      * @return integer The ID of the newly created list
      * @access public
      */
-    public function addlist($name, $description = '', $visible = true)
+    public function addList($name, $description = '', $visible = true)
     {
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'addlist',
             array('name' => trim($name), 'description' => trim($description), 'visible' => ($visible == true))
         );
@@ -264,9 +293,9 @@ class SmartmessagesAPI
      * @return boolean True on success
      * @access public
      */
-    public function updatelist($listid, $name, $description, $visible)
+    public function updateList($listid, $name, $description, $visible)
     {
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'updatelist',
             array(
                 'listid' => (integer)$listid,
@@ -285,43 +314,43 @@ class SmartmessagesAPI
      * @return boolean True on success
      * @access public
      */
-    public function deletelist($listid)
+    public function deleteList($listid)
     {
-        $res = $this->dorequest('deletelist', array('listid' => (integer)$listid));
+        $res = $this->doRequest('deletelist', array('listid' => (integer)$listid));
         return $res['status'];
     }
 
     /**
      * Get info about a recipient.
      * @param string $address The email address
-     * @throws SmartmessagesAPIException
-     * @return array Info about the user
+     * @return array
+     * @throws ParameterException
      * @access public
      */
-    public function getuserinfo($address)
+    public function getUserInfo($address)
     {
         if (trim($address) == '') {
-            throw new SmartmessagesAPIException('Invalid email address');
+            throw new ParameterException('Invalid email address');
         }
-        $res = $this->dorequest('getuserinfo', array('address' => $address));
+        $res = $this->doRequest('getuserinfo', array('address' => $address));
         return $res['userinfo'];
     }
 
     /**
      * Set info about a recipient.
-     * @see getuserinfo()
+     * @see getUserInfo()
      * @param string $address The email address
      * @param array $userinfo Array of user properties in the same format as returned by getuserinfo()
-     * @throws SmartmessagesAPIException
-     * @return boolean true on success
+     * @return boolean
+     * @throws ParameterException
      * @access public
      */
-    public function setuserinfo($address, $userinfo)
+    public function setUserInfo($address, $userinfo)
     {
         if (trim($address) == '') {
-            throw new SmartmessagesAPIException('Invalid email address');
+            throw new ParameterException('Invalid email address');
         }
-        $res = $this->dorequest('setuserinfo', array('address' => $address, 'userinfo' => $userinfo));
+        $res = $this->doRequest('setuserinfo', array('address' => $address, 'userinfo' => $userinfo));
         return $res['status'];
     }
 
@@ -331,9 +360,9 @@ class SmartmessagesAPI
      * @return array
      * @access public
      */
-    public function getspamreporters()
+    public function getSpamReporters()
     {
-        $res = $this->dorequest('getspamreporters');
+        $res = $this->doRequest('getspamreporters');
         return $res['spamreporters'];
     }
 
@@ -342,9 +371,9 @@ class SmartmessagesAPI
      * @return array
      * @access public
      */
-    public function getfieldorder()
+    public function getFieldOrder()
     {
-        $res = $this->dorequest('getfieldorder');
+        $res = $this->doRequest('getfieldorder');
         return $res['fields'];
     }
 
@@ -352,43 +381,43 @@ class SmartmessagesAPI
      * Set your default import field order list.
      * The field list MUST include emailaddress
      * Any invalid or unknown names will be ignored
-     * @see getfieldorder()
+     * @see getFieldOrder()
      * @param array $fields Simple array of field names
-     * @throws SmartmessagesAPIException
-     * @return array The array of field names that was set, after filtering
+     * @return array
+     * @throws ParameterException
      * @access public
      */
-    public function setfieldorder($fields)
+    public function setFieldOrder($fields)
     {
         if (empty($fields) or !in_array('emailaddress', $fields)) {
-            throw new SmartmessagesAPIException('Invalid field order');
+            throw new ParameterException('Invalid field order');
         }
         $fieldstring = implode(',', $fields);
-        $res = $this->dorequest('setfieldorder', array('fields' => $fieldstring));
+        $res = $this->doRequest('setfieldorder', array('fields' => $fieldstring));
         return $res['fields'];
     }
 
     /**
      * Get a list of everyone that has unsubscribed from the specified mailing list.
-     * @param integer $listid
-     * @throws SmartmessagesAPIException
+     * @param integer $listid The list ID
      * @return array
+     * @throws ParameterException
      * @access public
      */
-    public function getlistunsubs($listid)
+    public function getListUnsubs($listid)
     {
         if ((integer)$listid <= 0) {
-            throw new SmartmessagesAPIException('Invalid list id');
+            throw new ParameterException('Invalid list id');
         }
-        $res = $this->dorequest('getlistunsubs', array('listid' => (integer)$listid));
+        $res = $this->doRequest('getlistunsubs', array('listid' => (integer)$listid));
         return $res['unsubscribes'];
     }
 
     /**
      * Upload a mailing list.
-     * @see getlists()
-     * @see getfieldorder()
-     * @see getuploadinfo()
+     * @see getLists()
+     * @see getFieldOrder()
+     * @see getUploadInfo()
      * @param integer $listid The ID of the list to upload into
      * @param string $listfilename A path to a local file containing your mailing list in CSV format
      *      (may also be zipped)
@@ -399,11 +428,11 @@ class SmartmessagesAPI
      * @param boolean $replace Whether to empty the list before uploading this list
      *      (actually deletes anyone not in this upload so history is maintained)
      * @param boolean $fieldorderfirstline Set to true if the first line of the file contains field names
-     * @throws SmartmessagesAPIException
-     * @return integer|boolean On success, the upload ID for passing to getuploadinfo(), otherwise boolean false
+     * @return boolean|integer
+     * @throws ParameterException
      * @access public
      */
-    public function uploadlist(
+    public function uploadList(
         $listid,
         $listfilename,
         $source,
@@ -412,15 +441,15 @@ class SmartmessagesAPI
         $fieldorderfirstline = false
     ) {
         if ((integer)$listid <= 0) {
-            throw new SmartmessagesAPIException('Invalid list id');
+            throw new ParameterException('Invalid list id');
         }
         if (!file_exists($listfilename)) {
-            throw new SmartmessagesAPIException('File does not exist!');
+            throw new ParameterException('File does not exist!');
         }
         if (filesize($listfilename) < 6) { //This is the smallest a single external email address could possibly be
-            throw new SmartmessagesAPIException('File does not contain any data!');
+            throw new ParameterException('File does not contain any data!');
         }
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'uploadlist',
             array(
                 'method' => 'uploadlist',
@@ -439,21 +468,21 @@ class SmartmessagesAPI
 
     /**
      * Get info on a previous list upload.
-     * @see getlists()
-     * @see getfieldorder()
-     * @see uploadlist()
+     * @see getLists()
+     * @see getFieldOrder()
+     * @see uploadList()
      * @param integer $listid The ID of the list the upload belongs to
      * @param integer $uploadid The ID of the upload (as returned from uploadlist())
-     * @throws SmartmessagesAPIException
-     * @return array A list of upload properties. Includes lists of bad or invalid addresses, source tracking field
+     * @return array
+     * @throws ParameterException
      * @access public
      */
-    public function getuploadinfo($listid, $uploadid)
+    public function getUploadInfo($listid, $uploadid)
     {
         if ((integer)$listid <= 0 or (integer)$uploadid <= 0) {
-            throw new SmartmessagesAPIException('Invalid getuploadinfo parameters');
+            throw new ParameterException('Invalid getuploadinfo parameters');
         }
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'getuploadinfo',
             array(
                 'listid' => (integer)$listid,
@@ -466,20 +495,20 @@ class SmartmessagesAPI
     /**
      * Get info on all previous list uploads.
      * Only gives basic info on each upload, more detail can be obtained using getuploadinfo()
-     * @see getlists()
-     * @see uploadlist()
-     * @see getuploadinfo()
+     * @see getLists()
+     * @see uploadList()
+     * @see getUploadInfo()
      * @param integer $listid The ID of the list the upload belongs to
-     * @throws SmartmessagesAPIException
-     * @return array An array of uploads with properties for each.
+     * @return array
+     * @throws ParameterException
      * @access public
      */
-    public function getuploads($listid)
+    public function getUploads($listid)
     {
         if ((integer)$listid <= 0) {
-            throw new SmartmessagesAPIException('Invalid getuploads parameters');
+            throw new ParameterException('Invalid getuploads parameters');
         }
-        $res = $this->dorequest('getuploads', array('listid' => (integer)$listid));
+        $res = $this->doRequest('getuploads', array('listid' => (integer)$listid));
         return $res['uploads'];
     }
 
@@ -487,20 +516,20 @@ class SmartmessagesAPI
      * Cancel a pending or in-progress upload.
      * Cancelled uploads are deleted, so won't appear in getuploads()
      * Deletions are asynchronous, so won't happen immediately
-     * @see getlists()
-     * @see uploadlist()
+     * @see getLists()
+     * @see uploadList()
      * @param integer $listid The ID of the list the upload belongs to
      * @param integer $uploadid The ID of the upload (as returned from uploadlist())
-     * @throws SmartmessagesAPIException
-     * @return boolean true on success
+     * @return bool
+     * @throws ParameterException
      * @access public
      */
-    public function cancelupload($listid, $uploadid)
+    public function cancelUpload($listid, $uploadid)
     {
         if ((integer)$listid <= 0 or (integer)$uploadid <= 0) {
-            throw new SmartmessagesAPIException('Invalid getuploadinfo parameters');
+            throw new ParameterException('Invalid getuploadinfo parameters');
         }
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'cancelupload',
             array(
                 'listid' => (integer)$listid,
@@ -516,9 +545,9 @@ class SmartmessagesAPI
      * @return array
      * @access public
      */
-    public function getcallbackurl()
+    public function getCallbackURL()
     {
-        $res = $this->dorequest('getcallbackurl');
+        $res = $this->doRequest('getcallbackurl');
         return $res['url'];
     }
 
@@ -526,16 +555,16 @@ class SmartmessagesAPI
      * Set the callback URL for your account.
      * Read our support wiki for more details on this
      * @param string $url The URL of your callback script (this will be on YOUR web server, not ours)
-     * @throws SmartmessagesAPIException
-     * @return boolean true on success
+     * @return bool
+     * @throws ParameterException
      * @access public
      */
-    public function setcallbackurl($url)
+    public function setCallbackURL($url)
     {
-        if (trim($url) == '') {
-            throw new SmartmessagesAPIException('Invalid setcallbackurl url');
+        if (!filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_HOST_REQUIRED | FILTER_FLAG_SCHEME_REQUIRED)) {
+            throw new ParameterException('Invalid callback URL');
         }
-        $res = $this->dorequest('setcallbackurl', array('url' => $url));
+        $res = $this->doRequest('setcallbackurl', array('url' => $url));
         return $res['status'];
     }
 
@@ -545,14 +574,18 @@ class SmartmessagesAPI
      * any address you add to a list will also be accepted by us
      * If you encounter an address that we reject that you think we shouldn't, please tell us!
      * Read our support wiki for more details on this
-     * @param string $address
-     * @return array
+     * @param string $address The address to validate
+     * @param boolean $remote Whether to do the validation locally (saving a round trip) or remotely
+     * @return boolean
      * @access public
      */
-    public function validateaddress($address)
+    public function validateAddress($address, $remote = false)
     {
-        $res = $this->dorequest('validateaddress', array('address' => $address));
-        return $res['valid'];
+        if (!$remote) {
+            return (boolean)filter_var($address, FILTER_VALIDATE_EMAIL);
+        }
+        $res = $this->doRequest('validateaddress', array('address' => $address));
+        return (boolean)$res['valid'];
     }
 
     /**
@@ -560,9 +593,9 @@ class SmartmessagesAPI
      * @return array
      * @access public
      */
-    public function getcampaigns()
+    public function getCampaigns()
     {
-        $res = $this->dorequest('getcampaigns');
+        $res = $this->doRequest('getcampaigns');
         return $res['campaigns'];
     }
 
@@ -573,9 +606,9 @@ class SmartmessagesAPI
      * @return integer The ID of the new campaign
      * @access public
      */
-    public function addcampaign($name)
+    public function addCampaign($name)
     {
-        $res = $this->dorequest('addcampaign', array('name' => $name));
+        $res = $this->doRequest('addcampaign', array('name' => $name));
         return $res['campaignid'];
     }
 
@@ -586,9 +619,9 @@ class SmartmessagesAPI
      * @return boolean True on success
      * @access public
      */
-    public function updatecampaign($campaignid, $name)
+    public function updateCampaign($campaignid, $name)
     {
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'updatecampaign',
             array(
                 'campaignid' => (integer)$campaignid,
@@ -605,9 +638,9 @@ class SmartmessagesAPI
      * @return boolean True on success
      * @access public
      */
-    public function deletecampaign($campaignid)
+    public function deleteCampaign($campaignid)
     {
-        $res = $this->dorequest('deletecampaign', array('campaignid' => (integer)$campaignid));
+        $res = $this->doRequest('deletecampaign', array('campaignid' => (integer)$campaignid));
         return $res['status'];
     }
 
@@ -620,9 +653,9 @@ class SmartmessagesAPI
      * @return array
      * @access public
      */
-    public function getcampaignmailshots($campaignid)
+    public function getCampaignMailshots($campaignid)
     {
-        $res = $this->dorequest('getcampaignmailshots', array('campaignid' => $campaignid));
+        $res = $this->doRequest('getcampaignmailshots', array('campaignid' => $campaignid));
         return $res['mailshots'];
     }
 
@@ -632,9 +665,9 @@ class SmartmessagesAPI
      * @return array
      * @access public
      */
-    public function getmailshot($mailshotid)
+    public function getMailshot($mailshotid)
     {
-        $res = $this->dorequest('getmailshot', array('mailshotid' => $mailshotid));
+        $res = $this->doRequest('getmailshot', array('mailshotid' => $mailshotid));
         return $res['mailshot'];
     }
 
@@ -645,9 +678,9 @@ class SmartmessagesAPI
      * @return array|string
      * @access public
      */
-    public function getmailshotclicks($mailshotid, $ascsv = false)
+    public function getMailshotClicks($mailshotid, $ascsv = false)
     {
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'getmailshotclicks',
             array(
                 'mailshotid' => $mailshotid,
@@ -668,9 +701,9 @@ class SmartmessagesAPI
      * @return array|string
      * @access public
      */
-    public function getmailshotopens($mailshotid, $ascsv = false)
+    public function getMailshotOpens($mailshotid, $ascsv = false)
     {
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'getmailshotopens',
             array(
                 'mailshotid' => $mailshotid,
@@ -691,9 +724,9 @@ class SmartmessagesAPI
      * @return array|string
      * @access public
      */
-    public function getmailshotunsubs($mailshotid, $ascsv = false)
+    public function getMailshotUnsubs($mailshotid, $ascsv = false)
     {
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'getmailshotunsubs',
             array(
                 'mailshotid' => $mailshotid,
@@ -714,9 +747,9 @@ class SmartmessagesAPI
      * @return array|string
      * @access public
      */
-    public function getmailshotbounces($mailshotid, $ascsv = false)
+    public function getMailshotBounces($mailshotid, $ascsv = false)
     {
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'getmailshotbounces',
             array(
                 'mailshotid' => $mailshotid,
@@ -737,9 +770,9 @@ class SmartmessagesAPI
      * @return array
      * @access public
      */
-    public function gettemplates($includeglobal = false, $includeinherited = true)
+    public function getTemplates($includeglobal = false, $includeinherited = true)
     {
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'gettemplates',
             array('includeglobal' => $includeglobal, 'includeinherited' => $includeinherited)
         );
@@ -752,9 +785,9 @@ class SmartmessagesAPI
      * @return array
      * @access public
      */
-    public function gettemplate($templateid)
+    public function getTemplate($templateid)
     {
-        $res = $this->dorequest('gettemplate', array('templateid' => $templateid));
+        $res = $this->doRequest('gettemplate', array('templateid' => $templateid));
         return $res['template'];
     }
 
@@ -772,10 +805,11 @@ class SmartmessagesAPI
      *      mainly for internal tracking purposes, but you may find it useful if you use several languages
      * @param boolean $importimages Whether to do a one-off import and URL conversion
      *      of images referenced in the template
-     * @return integer, or false on failure
+     * @param boolean $convertformat Set to true to automatically identify and convert from other template formats
+     * @return int|boolean Returns the ID of the new template or false on failure
      * @access public
      */
-    public function addtemplate(
+    public function addTemplate(
         $name,
         $html,
         $plain,
@@ -783,10 +817,11 @@ class SmartmessagesAPI
         $description = '',
         $generateplain = false,
         $language = 'en',
-        $importimages = false
+        $importimages = false,
+        $convertformat = false
     ) {
         //Use a post request to cope with large content
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'addtemplate',
             array(
                 'name' => $name,
@@ -794,9 +829,10 @@ class SmartmessagesAPI
                 'html' => $html,
                 'subject' => $subject,
                 'description' => $description,
-                'generateplain' => $generateplain,
+                'generateplain' => (boolean)$generateplain,
                 'language' => $language,
-                'importimages' => ($importimages == true)
+                'importimages' => (boolean)$importimages,
+                'convertformat' => (boolean)$convertformat
             ),
             null,
             true
@@ -820,10 +856,11 @@ class SmartmessagesAPI
      *      mainly for internal tracking purposes, but you may find it useful if you use several languages
      * @param boolean $importimages Whether to do a one-off import and URL conversion
      *      of images referenced in the template
-     * @return integer, or false on failure
+     * @param boolean $convertformat Set to true to automatically identify and convert from other template formats
+     * @return boolean
      * @access public
      */
-    public function updatetemplate(
+    public function updateTemplate(
         $templateid,
         $name,
         $html,
@@ -832,10 +869,11 @@ class SmartmessagesAPI
         $description = '',
         $generateplain = false,
         $language = 'en',
-        $importimages = false
+        $importimages = false,
+        $convertformat = false
     ) {
         //Use a post request to cope with large content
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'updatetemplate',
             array(
                 'templateid' => (integer)$templateid,
@@ -846,12 +884,13 @@ class SmartmessagesAPI
                 'description' => $description,
                 'generateplain' => $generateplain,
                 'language' => $language,
-                'importimages' => ($importimages == true)
+                'importimages' => ($importimages == true),
+                'convertformat' => ($convertformat == true)
             ),
             null,
             true
         );
-        return $res['status']; //Return the new template ID on success, or false if it failed
+        return $res['status']; //Return true on success, or false if it failed
     }
 
     /**
@@ -862,24 +901,37 @@ class SmartmessagesAPI
      * @param string $url The location of the template web page
      * @param string $subject The default subject template
      * @param string $description A plain-text description of the template (in ISO 8859-1 charset)
-     * @param bool $importimages
-     * @return integer, or false on failure
+     * @param boolean $importimages Whether to do a one-off import and URL conversion
+     *      of images referenced in the template
+     * @param boolean $convertformat Set to true to automatically identify and convert from other template formats
+     * @return bool|int Returns the ID of the new template or false on failure
+     * @throws ParameterException
      * @access public
      */
-    public function addtemplatefromurl($name, $url, $subject, $description = '', $importimages = false)
-    {
-        $res = $this->dorequest(
+    public function addTemplateFromURL(
+        $name,
+        $url,
+        $subject,
+        $description = '',
+        $importimages = false,
+        $convertformat = false
+    ) {
+        if (!filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_HOST_REQUIRED | FILTER_FLAG_SCHEME_REQUIRED)) {
+            throw new ParameterException('Invalid template URL');
+        }
+        $res = $this->doRequest(
             'addtemplatefromurl',
             array(
                 'name' => $name,
                 'url' => $url,
                 'subject' => $subject,
                 'description' => $description,
-                'importimages' => ($importimages == true)
+                'importimages' => ($importimages == true),
+                'convertformat' => ($convertformat == true)
             )
         );
         //Return the new template ID on success, or false if it failed
-        return ($res['status'] ? $res['templateid'] : false);
+        return ($res['status'] ? (integer)$res['templateid'] : false);
     }
 
     /**
@@ -891,10 +943,10 @@ class SmartmessagesAPI
      * @return boolean
      * @access public
      */
-    public function deletetemplate($templateid)
+    public function deleteTemplate($templateid)
     {
-        $res = $this->dorequest('deletetemplate', array('templateid' => (integer)$templateid));
-        return $res['status']; //Return the new template ID on success, or false if it failed
+        $res = $this->doRequest('deletetemplate', array('templateid' => (integer)$templateid));
+        return $res['status']; //Return true on success, or false if it failed
     }
 
     /**
@@ -903,9 +955,9 @@ class SmartmessagesAPI
      * @param integer $templateid The id of the template to send
      * @param integer $listid The id of the mailing list to send to
      * @param string $title The name of the new mailshot (if left blank, one will created automatically)
-     * @param integer $campaignid The id of the campaign folder to store the mailshot in
+     * @param integer $campaignid The id of the campaign folder to store the mailshot in (test campaign by default)
      * @param string $subject The subject template (if left blank, template default subject will be used)
-     * @param string $fromaddr The email address the mailshot will be sent from
+     * @param string $fromaddr The address the mailshot will be sent from (account default or your login address by default)
      * @param string $fromname The name the mailshot will be sent from
      * @param string $replyto If you want replies to go somewhere other than the from address, supply one here
      * @param string $when When to send the mailshot, the string 'now' (or empty) for immediate send,
@@ -915,19 +967,19 @@ class SmartmessagesAPI
      * @return integer|bool ID of the new mailshot id, or false on failure
      * @access public
      */
-    public function sendmailshot(
+    public function sendMailshot(
         $templateid,
         $listid,
         $title = '',
-        $campaignid,
+        $campaignid = 0,
         $subject = '',
-        $fromaddr,
+        $fromaddr = '',
         $fromname = '',
         $replyto = '',
         $when = 'now',
         $continuous = false
     ) {
-        $res = $this->dorequest(
+        $res = $this->doRequest(
             'sendmailshot',
             array(
                 'templateid' => (integer)$templateid,
@@ -954,10 +1006,12 @@ class SmartmessagesAPI
      * @param boolean $post whether to do a POST instead of a GET
      * @param array $files An array of local filenames to attach to a POST request
      * @param bool $returnraw
-     * @throws SmartmessagesAPIException
-     * @return mixed Whatever comes back from the API call (decoded)
+     * @return mixed
+     * @throws ConnectionException
+     * @throws DataException
+     * @throws Exception
      */
-    protected function dorequest(
+    protected function doRequest(
         $command,
         $params = array(),
         $urloverride = '',
@@ -966,14 +1020,14 @@ class SmartmessagesAPI
         $returnraw = false
     ) {
         ini_set('arg_separator.output', '&');
-        //All commands except login need an accesskey
-        if (!empty($this->accesskey)) {
-            $params['accesskey'] = $this->accesskey;
+        //All commands except login need an accessKey
+        if (!empty($this->accessKey)) {
+            $params['accesskey'] = $this->accessKey;
         }
         if (empty($urloverride)) {
             if (empty($this->endpoint)) {
                 //We can't connect
-                throw new SmartmessagesAPIException('Missing Smartmessages API URL');
+                throw new ConnectionException('Missing Smartmessages API URL');
             } else {
                 $url = $this->endpoint;
             }
@@ -984,9 +1038,10 @@ class SmartmessagesAPI
         $verb = ($post?'POST':'GET');
         //Make the request (must have fopen wrappers enabled)
         if ($this->debug) {
-            echo "<h1>$verb Request (" . htmlspecialchars($command) . "):</h1><p>" . htmlspecialchars(
+            echo "<h1>$verb Request (" . htmlspecialchars($command) . "):</h1>\n<p>" . htmlspecialchars(
                 $url
             ) . "</p>\n";
+            echo "<div>\n". htmlspecialchars(var_export($params, true))."\n</div>\n";
         }
         if ($post) {
             $response = $this->doPostRequest($url, $params, $files);
@@ -994,7 +1049,17 @@ class SmartmessagesAPI
             if (!empty($params)) {
                 $url .= '?' . http_build_query($params);
             }
-            $response = file_get_contents($url);
+            $params = array();
+            //Enforce valid SSL certificates
+            if (substr($url, 0, 6) == 'https:') {
+                $params['ssl'] = array(
+                    'verify_peer' => true,
+                    'verify_peer_name' => true,
+                    'allow_self_signed' => false
+                );
+            }
+            $ctx = stream_context_create($params);
+            $response = file_get_contents($url, null, $ctx);
         }
         //If you want to support response types other than serialised PHP, you'll need to write your own,
         //though php is obviously the best fit since we are in it already!
@@ -1004,10 +1069,10 @@ class SmartmessagesAPI
         $response = @unserialize($response);
         if ($response === false) {
             $this->message = 'Failed to unserialize PHP data';
-            throw new SmartmessagesAPIException($this->message, 0);
+            throw new DataException($this->message, 0);
         }
         if (array_key_exists('status', $response)) {
-            $this->laststatus = ($response['status'] == true);
+            $this->lastStatus = ($response['status'] == true);
         }
         if (array_key_exists('msg', $response)) {
             $this->message = $response['msg'];
@@ -1015,17 +1080,17 @@ class SmartmessagesAPI
             $this->message = '';
         }
         if (array_key_exists('errorcode', $response)) {
-            $this->errorcode = $response['errorcode'];
+            $this->errorCode = $response['errorcode'];
         } else {
-            $this->errorcode = '';
+            $this->errorCode = '';
         }
         if ($this->debug) {
-            echo "<h1>Response:</h1><div><pre>";
-            echo htmlentities(var_export($response, true), ENT_QUOTES, 'UTF-8');
+            echo "<h1>Response:</h1>\n<div><pre>";
+            echo htmlspecialchars(var_export($response, true));
             echo "</pre></div>\n";
         }
-        if (!$this->laststatus) {
-            throw new SmartmessagesAPIException($this->message, $this->errorcode);
+        if (!$this->lastStatus) {
+            throw new DataException($this->message, $this->errorCode);
         }
         return $response;
     }
@@ -1072,9 +1137,17 @@ class SmartmessagesAPI
                 'content' => $data
             )
         );
+        //Enforce valid SSL certificates
+        if (substr($url, 0, 6) == 'https:') {
+            $params['ssl'] = array(
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+                'allow_self_signed' => false
+            );
+        }
 
         if ($this->debug) {
-            echo "<h2>POST body:</h2><pre>";
+            echo "<h2>POST body:</h2><pre>\n";
             echo htmlentities(substr($data, 0, 8192), ENT_QUOTES, 'UTF-8'); //Limit size of debug output
             echo "</pre>\n";
         }
@@ -1083,17 +1156,54 @@ class SmartmessagesAPI
         $fileh = fopen($url, 'rb', false, $ctx);
 
         if (!$fileh) {
-            throw new Exception("Problem with $url, $php_errormsg");
+            throw new ConnectionException("Problem with $url, $php_errormsg");
         }
 
         $response = @stream_get_contents($fileh);
         if ($response === false) {
-            throw new Exception("Problem reading data from $url, $php_errormsg");
+            throw new ConnectionException("Problem reading data from $url, $php_errormsg");
         }
         return $response;
     }
 }
 
-class SmartmessagesAPIException extends \Exception
+/**
+ * Exception base class.
+ */
+class Exception extends \Exception
 {
+
+}
+
+/**
+ * Thrown when curl connections fail: DNS failure, HTTP timeout etc.
+ */
+class ConnectionException extends Exception
+{
+
+}
+
+/**
+ * Thrown when invalid data is encountered,
+ * such as when responses are not valid JSON or serialized PHP.
+ */
+class DataException extends Exception
+{
+
+}
+
+/**
+ * Thrown when invalid method parameters are encountered,
+ */
+class ParameterException extends Exception
+{
+
+}
+
+/**
+ * Thrown when login fails or session has expired.
+ */
+class AuthException extends Exception
+{
+
 }
