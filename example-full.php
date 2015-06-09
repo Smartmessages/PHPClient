@@ -42,6 +42,7 @@ $endpoint = '';
  * or in response to the getLists API call
  */
 $testlistid = 0;
+
 //You can set the above properties in this included file in order not to pollute this example code with real data!
 if (file_exists('testsettings.php')) {
     include 'testsettings.php';

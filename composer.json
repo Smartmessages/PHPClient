@@ -2,8 +2,9 @@
   "name": "smartmessages/phpclient",
   "description": "Client wrapper for the Smartmessages.net web API",
   "require": {
-    "php": ">=5.3.0",
-    "ext-openssl": "*"
+    "php": ">=5.4.0",
+    "ext-openssl": "*",
+    "guzzlehttp/guzzle": "~6.0"
   },
   "license": "MIT",
   "authors": [
@@ -12,7 +13,7 @@
       "email": "marcus@synchromedia.co.uk"
     }
   ],
-  "minimum-stability": "dev",
+  "minimum-stability": "stable",
   "autoload": {
     "psr-4": {
       "Smartmessages\\": "src/"

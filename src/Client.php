@@ -41,7 +41,7 @@ class Client
     protected $connected = false;
 
     /**
-     * Timestamp of when this session expires.
+     * Timestamp of when this session expires, or 0 if not logged in.
      * @type integer
      */
     protected $expires = 0;
@@ -65,13 +65,6 @@ class Client
     protected $errorCode = 0;
 
     /**
-     * The most recent message received in an API response.
-     * Does not necessarily indicate an error, may have some other informational content.
-     * @type string
-     */
-    public $message = '';
-
-    /**
      * Whether to run in debug mode.
      * With this enabled, all requests and responses generate descriptive output
      * @type boolean
@@ -80,11 +73,22 @@ class Client
 
     /**
      * Constructor, creates a new Smartmessages API instance
-     * @param boolean $debug Whether to activate debug mode
+     * @param boolean $debug Whether to activate debug output
      */
     public function __construct($debug = false)
     {
         $this->debug = (boolean)$debug;
+        ini_set('arg_separator.output', '&');
+    }
+
+    /**
+     * Destructor - log out explicitly if we've not done so already.
+     */
+    public function __destruct()
+    {
+        if ($this->connected) {
+            $this->logout();
+        }
     }
 
     /**
@@ -93,17 +97,26 @@ class Client
      * @param string $user The user name (usually an email address)
      * @param string $pass
      * @param string $apikey The API key as shown on the settings page of the smartmessages UI
-     * @param string $baseurl The initial entry point for the Smartmessage API
-     * @return boolean true if login was successful
+     * @param string $baseurl The initial entry point for the Smartmessages API
+     * @return bool True if login was successful
+     * @throws AuthException
+     * @throws Exception
      * @access public
      */
     public function login($user, $pass, $apikey, $baseurl = 'https://www.smartmessages.net/api/')
     {
-        $response = $this->doRequest(
+        $this->endpoint = $baseurl;
+        $response = $this->get(
             'login',
-            array('username' => $user, 'password' => $pass, 'apikey' => $apikey, 'outputformat' => 'php'),
-            $baseurl
+            ['username' => $user, 'password' => $pass, 'apikey' => $apikey, 'outputformat' => 'php']
         );
+        if (!$response['status']) {
+            if ($response['errorcode'] == 1) {
+                throw new AuthException($response['msg'], $response['errorcode']);
+            } else {
+                throw new Exception($response['msg'], $response['errorcode']);
+            }
+        }
         $this->connected = true;
         $this->accessKey = $response['accesskey'];
         $this->endpoint = $response['endpoint'];
@@ -119,7 +132,7 @@ class Client
      */
     public function logout()
     {
-        $this->doRequest('logout');
+        $this->get('logout');
         $this->connected = false;
         $this->accessKey = '';
         $this->expires = 0;
@@ -132,7 +145,7 @@ class Client
      */
     public function ping()
     {
-        $res = $this->doRequest('ping');
+        $res = $this->get('ping');
         return $res['status'];
     }
 
@@ -154,15 +167,15 @@ class Client
         if (trim($address) == '' or (integer)$listid <= 0) {
             throw new ParameterException('Invalid subscribe parameters');
         }
-        $res = $this->doRequest(
+        $res = $this->get(
             'subscribe',
-            array(
+            [
                 'address' => trim($address),
                 'listid' => (integer)$listid,
                 'name' => $dear,
                 'firstname' => $firstname,
                 'lastname' => $lastname
-            )
+            ]
         );
         return $res['status'];
     }
@@ -181,7 +194,35 @@ class Client
         if (trim($address) == '' or (integer)$listid <= 0) {
             throw new ParameterException('Invalid unsubscribe parameters');
         }
-        $res = $this->doRequest('unsubscribe', array('address' => trim($address), 'listid' => (integer)$listid));
+        $res = $this->get('unsubscribe', ['address' => trim($address), 'listid' => (integer)$listid]);
+        return $res['status'];
+    }
+
+    /**
+     * Add an existing subscriber to another list.
+     * Similar to subscribe, but without the associated semantics,
+     * simply adds them to a list without notifications or verification.
+     * @see getLists()
+     * @param string $address The email address
+     * @param integer $listid The ID of the list to add the user to
+     * @param string $note A description of why this change was made, e.g. 'submitted competition form'
+     * @return boolean
+     * @throws ParameterException
+     * @access public
+     */
+    public function addSubscription($address, $listid, $note = '')
+    {
+        if (trim($address) == '' or (integer)$listid <= 0) {
+            throw new ParameterException('Invalid add subscription parameters');
+        }
+        $res = $this->get(
+            'addsubscription',
+            [
+                'address' => trim($address),
+                'listid' => (integer)$listid,
+                'note' => $note
+            ]
+        );
         return $res['status'];
     }
 
@@ -192,7 +233,7 @@ class Client
      * @see getLists()
      * @param string $address The email address
      * @param integer $listid The ID of the list to delete the user from
-     * @return bool
+     * @return boolean
      * @throws ParameterException
      * @access public
      */
@@ -201,12 +242,12 @@ class Client
         if (trim($address) == '' or (integer)$listid <= 0) {
             throw new ParameterException('Invalid delete subscription parameters');
         }
-        $res = $this->doRequest(
-            'deleteSubscription',
-            array(
+        $res = $this->get(
+            'deletesubscription',
+            [
                 'address' => trim($address),
                 'listid' => (integer)$listid
-            )
+            ]
         );
         return $res['status'];
     }
@@ -219,7 +260,7 @@ class Client
      */
     public function getLists($showall = false)
     {
-        $res = $this->doRequest('getlists', array('showall' => (boolean)$showall));
+        $res = $this->get('getlists', ['showall' => (boolean)$showall]);
         return $res['mailinglists'];
     }
 
@@ -230,7 +271,7 @@ class Client
      */
     public function getTestList()
     {
-        $res = $this->doRequest('gettestlist');
+        $res = $this->get('gettestlist');
         return $res;
     }
 
@@ -251,12 +292,9 @@ class Client
      */
     public function getList($listid, $ascsv = true)
     {
-        $res = $this->doRequest(
+        $res = $this->get(
             'getlist',
-            array('listid' => (integer)$listid, 'ascsv' => (boolean)$ascsv),
-            '',
-            false,
-            array(),
+            ['listid' => (integer)$listid, 'ascsv' => (boolean)$ascsv],
             $ascsv
         );
         if ($ascsv) {
@@ -276,9 +314,9 @@ class Client
      */
     public function addList($name, $description = '', $visible = true)
     {
-        $res = $this->doRequest(
+        $res = $this->get(
             'addlist',
-            array('name' => trim($name), 'description' => trim($description), 'visible' => ($visible == true))
+            ['name' => trim($name), 'description' => trim($description), 'visible' => (boolean)$visible]
         );
         return $res['listid'];
     }
@@ -295,14 +333,14 @@ class Client
      */
     public function updateList($listid, $name, $description, $visible)
     {
-        $res = $this->doRequest(
+        $res = $this->get(
             'updatelist',
-            array(
+            [
                 'listid' => (integer)$listid,
                 'name' => trim($name),
                 'description' => trim($description),
-                'visible' => ($visible == true)
-            )
+                'visible' => (boolean)$visible
+            ]
         );
         return $res['status'];
     }
@@ -316,7 +354,7 @@ class Client
      */
     public function deleteList($listid)
     {
-        $res = $this->doRequest('deletelist', array('listid' => (integer)$listid));
+        $res = $this->get('deletelist', ['listid' => (integer)$listid]);
         return $res['status'];
     }
 
@@ -332,7 +370,7 @@ class Client
         if (trim($address) == '') {
             throw new ParameterException('Invalid email address');
         }
-        $res = $this->doRequest('getuserinfo', array('address' => $address));
+        $res = $this->get('getuserinfo', ['address' => $address]);
         return $res['userinfo'];
     }
 
@@ -350,7 +388,7 @@ class Client
         if (trim($address) == '') {
             throw new ParameterException('Invalid email address');
         }
-        $res = $this->doRequest('setuserinfo', array('address' => $address, 'userinfo' => $userinfo));
+        $res = $this->get('setuserinfo', ['address' => $address, 'userinfo' => $userinfo]);
         return $res['status'];
     }
 
@@ -362,7 +400,7 @@ class Client
      */
     public function getSpamReporters()
     {
-        $res = $this->doRequest('getspamreporters');
+        $res = $this->get('getspamreporters');
         return $res['spamreporters'];
     }
 
@@ -373,7 +411,7 @@ class Client
      */
     public function getFieldOrder()
     {
-        $res = $this->doRequest('getfieldorder');
+        $res = $this->get('getfieldorder');
         return $res['fields'];
     }
 
@@ -393,7 +431,7 @@ class Client
             throw new ParameterException('Invalid field order');
         }
         $fieldstring = implode(',', $fields);
-        $res = $this->doRequest('setfieldorder', array('fields' => $fieldstring));
+        $res = $this->get('setfieldorder', ['fields' => $fieldstring]);
         return $res['fields'];
     }
 
@@ -409,7 +447,7 @@ class Client
         if ((integer)$listid <= 0) {
             throw new ParameterException('Invalid list id');
         }
-        $res = $this->doRequest('getlistunsubs', array('listid' => (integer)$listid));
+        $res = $this->get('getlistunsubs', ['listid' => (integer)$listid]);
         return $res['unsubscribes'];
     }
 
@@ -449,19 +487,17 @@ class Client
         if (filesize($listfilename) < 6) { //This is the smallest a single external email address could possibly be
             throw new ParameterException('File does not contain any data!');
         }
-        $res = $this->doRequest(
+        $res = $this->post(
             'uploadlist',
-            array(
+            [
                 'method' => 'uploadlist',
                 'listid' => (integer)$listid,
                 'source' => $source,
                 'definitive' => (boolean)$definitive,
                 'replace' => (boolean)$replace,
                 'fieldorderfirstline' => (boolean)$fieldorderfirstline
-            ),
-            null,
-            true,
-            array($listfilename)
+            ],
+            [$listfilename]
         ); //This one requires a POST request for the list file attachment
         return ($res['status'] ? $res['uploadid'] : false); //Return the upload ID on success, or false if it failed
     }
@@ -482,12 +518,12 @@ class Client
         if ((integer)$listid <= 0 or (integer)$uploadid <= 0) {
             throw new ParameterException('Invalid getuploadinfo parameters');
         }
-        $res = $this->doRequest(
+        $res = $this->get(
             'getuploadinfo',
-            array(
+            [
                 'listid' => (integer)$listid,
                 'uploadid' => (integer)$uploadid
-            )
+            ]
         );
         return $res['upload'];
     }
@@ -508,7 +544,7 @@ class Client
         if ((integer)$listid <= 0) {
             throw new ParameterException('Invalid getuploads parameters');
         }
-        $res = $this->doRequest('getuploads', array('listid' => (integer)$listid));
+        $res = $this->get('getuploads', ['listid' => (integer)$listid]);
         return $res['uploads'];
     }
 
@@ -520,7 +556,7 @@ class Client
      * @see uploadList()
      * @param integer $listid The ID of the list the upload belongs to
      * @param integer $uploadid The ID of the upload (as returned from uploadlist())
-     * @return bool
+     * @return boolean
      * @throws ParameterException
      * @access public
      */
@@ -529,12 +565,12 @@ class Client
         if ((integer)$listid <= 0 or (integer)$uploadid <= 0) {
             throw new ParameterException('Invalid getuploadinfo parameters');
         }
-        $res = $this->doRequest(
+        $res = $this->get(
             'cancelupload',
-            array(
+            [
                 'listid' => (integer)$listid,
                 'uploadid' => (integer)$uploadid
-            )
+            ]
         );
         return $res['status'];
     }
@@ -547,7 +583,7 @@ class Client
      */
     public function getCallbackURL()
     {
-        $res = $this->doRequest('getcallbackurl');
+        $res = $this->get('getcallbackurl');
         return $res['url'];
     }
 
@@ -555,7 +591,7 @@ class Client
      * Set the callback URL for your account.
      * Read our support wiki for more details on this
      * @param string $url The URL of your callback script (this will be on YOUR web server, not ours)
-     * @return bool
+     * @return boolean
      * @throws ParameterException
      * @access public
      */
@@ -564,7 +600,7 @@ class Client
         if (!filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_HOST_REQUIRED | FILTER_FLAG_SCHEME_REQUIRED)) {
             throw new ParameterException('Invalid callback URL');
         }
-        $res = $this->doRequest('setcallbackurl', array('url' => $url));
+        $res = $this->get('setcallbackurl', ['url' => $url]);
         return $res['status'];
     }
 
@@ -584,7 +620,7 @@ class Client
         if (!$remote) {
             return (boolean)filter_var($address, FILTER_VALIDATE_EMAIL);
         }
-        $res = $this->doRequest('validateaddress', array('address' => $address));
+        $res = $this->get('validateaddress', ['address' => $address]);
         return (boolean)$res['valid'];
     }
 
@@ -595,7 +631,7 @@ class Client
      */
     public function getCampaigns()
     {
-        $res = $this->doRequest('getcampaigns');
+        $res = $this->get('getcampaigns');
         return $res['campaigns'];
     }
 
@@ -608,7 +644,7 @@ class Client
      */
     public function addCampaign($name)
     {
-        $res = $this->doRequest('addcampaign', array('name' => $name));
+        $res = $this->get('addcampaign', ['name' => $name]);
         return $res['campaignid'];
     }
 
@@ -621,12 +657,12 @@ class Client
      */
     public function updateCampaign($campaignid, $name)
     {
-        $res = $this->doRequest(
+        $res = $this->get(
             'updatecampaign',
-            array(
+            [
                 'campaignid' => (integer)$campaignid,
                 'name' => trim($name)
-            )
+            ]
         );
         return $res['status'];
     }
@@ -640,7 +676,7 @@ class Client
      */
     public function deleteCampaign($campaignid)
     {
-        $res = $this->doRequest('deletecampaign', array('campaignid' => (integer)$campaignid));
+        $res = $this->get('deletecampaign', ['campaignid' => (integer)$campaignid]);
         return $res['status'];
     }
 
@@ -655,7 +691,7 @@ class Client
      */
     public function getCampaignMailshots($campaignid)
     {
-        $res = $this->doRequest('getcampaignmailshots', array('campaignid' => $campaignid));
+        $res = $this->get('getcampaignmailshots', ['campaignid' => $campaignid]);
         return $res['mailshots'];
     }
 
@@ -667,7 +703,7 @@ class Client
      */
     public function getMailshot($mailshotid)
     {
-        $res = $this->doRequest('getmailshot', array('mailshotid' => $mailshotid));
+        $res = $this->get('getmailshot', ['mailshotid' => $mailshotid]);
         return $res['mailshot'];
     }
 
@@ -680,12 +716,13 @@ class Client
      */
     public function getMailshotClicks($mailshotid, $ascsv = false)
     {
-        $res = $this->doRequest(
+        $res = $this->get(
             'getmailshotclicks',
-            array(
+            [
                 'mailshotid' => $mailshotid,
-                'ascsv' => ($ascsv == true)
-            )
+                'ascsv' => (boolean)$ascsv
+            ],
+            (boolean)$ascsv
         );
         if ($ascsv) {
             return $res;
@@ -703,12 +740,13 @@ class Client
      */
     public function getMailshotOpens($mailshotid, $ascsv = false)
     {
-        $res = $this->doRequest(
+        $res = $this->get(
             'getmailshotopens',
-            array(
+            [
                 'mailshotid' => $mailshotid,
-                'ascsv' => ($ascsv == true)
-            )
+                'ascsv' => (boolean)$ascsv
+            ],
+            (boolean)$ascsv
         );
         if ($ascsv) {
             return $res;
@@ -726,12 +764,13 @@ class Client
      */
     public function getMailshotUnsubs($mailshotid, $ascsv = false)
     {
-        $res = $this->doRequest(
+        $res = $this->get(
             'getmailshotunsubs',
-            array(
+            [
                 'mailshotid' => $mailshotid,
-                'ascsv' => ($ascsv == true)
-            )
+                'ascsv' => (boolean)$ascsv
+            ],
+            (boolean)$ascsv
         );
         if ($ascsv) {
             return $res;
@@ -749,12 +788,13 @@ class Client
      */
     public function getMailshotBounces($mailshotid, $ascsv = false)
     {
-        $res = $this->doRequest(
+        $res = $this->get(
             'getmailshotbounces',
-            array(
+            [
                 'mailshotid' => $mailshotid,
-                'ascsv' => ($ascsv == true)
-            )
+                'ascsv' => (boolean)$ascsv
+            ],
+            (boolean)$ascsv
         );
         if ($ascsv) {
             return $res;
@@ -772,9 +812,9 @@ class Client
      */
     public function getTemplates($includeglobal = false, $includeinherited = true)
     {
-        $res = $this->doRequest(
+        $res = $this->get(
             'gettemplates',
-            array('includeglobal' => $includeglobal, 'includeinherited' => $includeinherited)
+            ['includeglobal' => $includeglobal, 'includeinherited' => $includeinherited]
         );
         return $res['templates'];
     }
@@ -787,7 +827,7 @@ class Client
      */
     public function getTemplate($templateid)
     {
-        $res = $this->doRequest('gettemplate', array('templateid' => $templateid));
+        $res = $this->get('gettemplate', ['templateid' => $templateid]);
         return $res['template'];
     }
 
@@ -801,12 +841,10 @@ class Client
      * @param string $description A plain-text description of the template
      * @param boolean $generateplain Whether to generate a plain text version from the HTML version
      *      (if set, will ignore the value of $plain)
-     * @param string $language What language this template is in (ISO 639-1 2-char code),
-     *      mainly for internal tracking purposes, but you may find it useful if you use several languages
      * @param boolean $importimages Whether to do a one-off import and URL conversion
      *      of images referenced in the template
      * @param boolean $convertformat Set to true to automatically identify and convert from other template formats
-     * @return int|boolean Returns the ID of the new template or false on failure
+     * @return integer|boolean Returns the ID of the new template or false on failure
      * @access public
      */
     public function addTemplate(
@@ -816,26 +854,21 @@ class Client
         $subject,
         $description = '',
         $generateplain = false,
-        $language = 'en',
         $importimages = false,
         $convertformat = false
     ) {
-        //Use a post request to cope with large content
-        $res = $this->doRequest(
+        $res = $this->post(
             'addtemplate',
-            array(
+            [
                 'name' => $name,
                 'plain' => $plain,
                 'html' => $html,
                 'subject' => $subject,
                 'description' => $description,
                 'generateplain' => (boolean)$generateplain,
-                'language' => $language,
                 'importimages' => (boolean)$importimages,
                 'convertformat' => (boolean)$convertformat
-            ),
-            null,
-            true
+            ]
         );
         //Return the new template ID on success, or false if it failed
         return ($res['status'] ? $res['templateid'] : false);
@@ -852,8 +885,6 @@ class Client
      * @param string $description A plain-text description of the template
      * @param boolean $generateplain Whether to generate a plain text version from the HTML version
      *      (if set, will ignore the value of $plain), defaults to false
-     * @param string $language What language this template is in (ISO 639-1 2-char code),
-     *      mainly for internal tracking purposes, but you may find it useful if you use several languages
      * @param boolean $importimages Whether to do a one-off import and URL conversion
      *      of images referenced in the template
      * @param boolean $convertformat Set to true to automatically identify and convert from other template formats
@@ -868,14 +899,13 @@ class Client
         $subject,
         $description = '',
         $generateplain = false,
-        $language = 'en',
         $importimages = false,
         $convertformat = false
     ) {
         //Use a post request to cope with large content
-        $res = $this->doRequest(
+        $res = $this->post(
             'updatetemplate',
-            array(
+            [
                 'templateid' => (integer)$templateid,
                 'name' => $name,
                 'plain' => $plain,
@@ -883,28 +913,26 @@ class Client
                 'subject' => $subject,
                 'description' => $description,
                 'generateplain' => $generateplain,
-                'language' => $language,
-                'importimages' => ($importimages == true),
-                'convertformat' => ($convertformat == true)
-            ),
-            null,
-            true
+                'importimages' => (boolean)$importimages,
+                'convertformat' => (boolean)$convertformat
+            ]
         );
-        return $res['status']; //Return true on success, or false if it failed
+        //Return true on success, or false if it failed
+        return $res['status'];
     }
 
     /**
      * Add a new template from a URL.
-     * All string params should use ISO 8859-1 character set
+     * All string params should use UTF-8 character set
      * Templates imported this way will automatically have a plain text version generated
      * @param string $name The name of the new template
      * @param string $url The location of the template web page
      * @param string $subject The default subject template
-     * @param string $description A plain-text description of the template (in ISO 8859-1 charset)
+     * @param string $description A plain-text description of the template (in UTF-8 charset)
      * @param boolean $importimages Whether to do a one-off import and URL conversion
      *      of images referenced in the template
      * @param boolean $convertformat Set to true to automatically identify and convert from other template formats
-     * @return bool|int Returns the ID of the new template or false on failure
+     * @return integer|boolean Returns the ID of the new template or false on failure
      * @throws ParameterException
      * @access public
      */
@@ -919,16 +947,16 @@ class Client
         if (!filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_HOST_REQUIRED | FILTER_FLAG_SCHEME_REQUIRED)) {
             throw new ParameterException('Invalid template URL');
         }
-        $res = $this->doRequest(
+        $res = $this->get(
             'addtemplatefromurl',
-            array(
+            [
                 'name' => $name,
                 'url' => $url,
                 'subject' => $subject,
                 'description' => $description,
-                'importimages' => ($importimages == true),
-                'convertformat' => ($convertformat == true)
-            )
+                'importimages' => (boolean)$importimages,
+                'convertformat' => (boolean)$convertformat
+            ]
         );
         //Return the new template ID on success, or false if it failed
         return ($res['status'] ? (integer)$res['templateid'] : false);
@@ -945,26 +973,26 @@ class Client
      */
     public function deleteTemplate($templateid)
     {
-        $res = $this->doRequest('deletetemplate', array('templateid' => (integer)$templateid));
+        $res = $this->get('deletetemplate', ['templateid' => (integer)$templateid]);
         return $res['status']; //Return true on success, or false if it failed
     }
 
     /**
      * Create and optionally send a new mailshot.
-     * All string params should use ISO 8859-1 character set
+     * All string params should use UTF-8 character set
      * @param integer $templateid The id of the template to send
      * @param integer $listid The id of the mailing list to send to
      * @param string $title The name of the new mailshot (if left blank, one will created automatically)
      * @param integer $campaignid The id of the campaign folder to store the mailshot in (test campaign by default)
-     * @param string $subject The subject template (if left blank, template default subject will be used)
-     * @param string $fromaddr The address the mailshot will be sent from (account default or your login address by default)
+     * @param string $subject The subject template (if left blank, template subject will be used)
+     * @param string $fromaddr The address the mailshot will be sent from (account default or your login address)
      * @param string $fromname The name the mailshot will be sent from
      * @param string $replyto If you want replies to go somewhere other than the from address, supply one here
      * @param string $when When to send the mailshot, the string 'now' (or empty) for immediate send,
      *      or an ISO-format UTC date ('yyyy-mm-dd hh:mm:ss')
      * @param boolean $continuous Is this a continuous mailshot? (never completes, existing subs are ignored,
      *      new subscriptions are sent a message immediately, ideal for 'welcome' messages)
-     * @return integer|bool ID of the new mailshot id, or false on failure
+     * @return integer|boolean ID of the new mailshot id, or false on failure
      * @access public
      */
     public function sendMailshot(
@@ -979,9 +1007,9 @@ class Client
         $when = 'now',
         $continuous = false
     ) {
-        $res = $this->doRequest(
+        $res = $this->get(
             'sendmailshot',
-            array(
+            [
                 'templateid' => (integer)$templateid,
                 'listid' => (integer)$listid,
                 'title' => $title,
@@ -992,7 +1020,7 @@ class Client
                 'replyto' => $replyto,
                 'when' => $when,
                 'continuous' => (boolean)$continuous
-            )
+            ]
         );
         //Return the new mailshot ID on success, or false if it failed
         return ($res['status'] ? $res['mailshotid'] : false);
@@ -1000,170 +1028,139 @@ class Client
 
     /**
      * Generic wrapper for issuing API requests.
+     * @param string $verb HTTP verb to use, in lower case (e.g. get, post)
      * @param string $command The name of the API function to call
      * @param array $params An associative array of function parameters to pass
-     * @param string $urloverride A URL to override the default location (typically used by login)
-     * @param boolean $post whether to do a POST instead of a GET
      * @param array $files An array of local filenames to attach to a POST request
-     * @param bool $returnraw
+     * @param boolean $returnraw Whether to decode the response (default) or return it as-is
      * @return mixed
+     * @throws AuthException
      * @throws ConnectionException
      * @throws DataException
-     * @throws Exception
      */
-    protected function doRequest(
+    protected function request(
+        $verb,
         $command,
-        $params = array(),
-        $urloverride = '',
-        $post = false,
-        $files = array(),
+        $params = [],
+        $files = [],
         $returnraw = false
     ) {
-        ini_set('arg_separator.output', '&');
         //All commands except login need an accessKey
         if (!empty($this->accessKey)) {
             $params['accesskey'] = $this->accessKey;
         }
-        if (empty($urloverride)) {
-            if (empty($this->endpoint)) {
-                //We can't connect
-                throw new ConnectionException('Missing Smartmessages API URL');
-            } else {
-                $url = $this->endpoint;
-            }
-        } else {
-            $url = $urloverride;
+        //Check whether the session has expired before making the request
+        //unless we're logging in
+        if ($command != 'login' and $this->expires <= time()) {
+            throw new AuthException('Session has expired; Please log in again.');
         }
-        $url .= $command;
-        $verb = ($post?'POST':'GET');
-        //Make the request (must have fopen wrappers enabled)
+        if (empty($this->endpoint)) {
+            //We can't connect
+            throw new ConnectionException('Missing Smartmessages API URL');
+        }
+        $client = new \GuzzleHttp\Client(['base_uri' => $this->endpoint]);
         if ($this->debug) {
-            echo "<h1>$verb Request (" . htmlspecialchars($command) . "):</h1>\n<p>" . htmlspecialchars(
-                $url
-            ) . "</p>\n";
-            echo "<div>\n". htmlspecialchars(var_export($params, true))."\n</div>\n";
-        }
-        if ($post) {
-            $response = $this->doPostRequest($url, $params, $files);
-        } else {
-            if (!empty($params)) {
-                $url .= '?' . http_build_query($params);
+            echo "#$verb Request, command = ", $command, ":\n", $this->endpoint, "\n";
+            echo "\n##Params: ", var_export($params, true), "\n";
+            if (!empty($files)) {
+                echo "\nFiles: ", var_export($files, true), "\n";
             }
-            $params = array();
-            //Enforce valid SSL certificates
-            if (substr($url, 0, 6) == 'https:') {
-                $params['ssl'] = array(
-                    'verify_peer' => true,
-                    'verify_peer_name' => true,
-                    'allow_self_signed' => false
+            echo "\n";
+        }
+        //Make the request
+        try {
+            if ($verb == 'get') {
+                $response = $client->get(
+                    $command,
+                    [
+                        'query' => $params
+                    ]
+                );
+            } else {
+                //Assume it's a POST
+                $form_files = [];
+                foreach ($files as $file) {
+                    $form_files[] = ['name' => basename($file), 'contents' => fopen($file, 'r')];
+                }
+                $response = $client->post(
+                    $command,
+                    [
+                        'form_params' => $params,
+                        'form_files' => $form_files
+                    ]
                 );
             }
-            $ctx = stream_context_create($params);
-            $response = file_get_contents($url, null, $ctx);
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $r = $e->getResponse();
+            throw new ConnectionException($r->getReasonPhrase(), $r->getStatusCode());
         }
-        //If you want to support response types other than serialised PHP, you'll need to write your own,
-        //though php is obviously the best fit since we are in it already!
-        if ($returnraw) { //Return undecoded response if that was asked for
-            return $response;
+        //Get the whole contents of the response stream
+        $body = $response->getBody()->getContents();
+        if ($returnraw) {
+            //Return complete body if that was asked for
+            return $body;
         }
-        $response = @unserialize($response);
-        if ($response === false) {
-            $this->message = 'Failed to unserialize PHP data';
-            throw new DataException($this->message, 0);
+        //If you want to use a response format other than serialised PHP, you'll need to write your own,
+        //though serialised PHP is obviously the best fit.
+        //Response should be serialized PHP, so try to decode it
+        $decodedResponse = @unserialize($body);
+        if ($decodedResponse === false) {
+            throw new DataException('Failed to unserialize PHP data', 0);
         }
-        if (array_key_exists('status', $response)) {
-            $this->lastStatus = ($response['status'] == true);
+        if (array_key_exists('status', $decodedResponse)) {
+            $this->lastStatus = (boolean)$decodedResponse['status'];
         }
-        if (array_key_exists('msg', $response)) {
-            $this->message = $response['msg'];
-        } else {
-            $this->message = '';
-        }
-        if (array_key_exists('errorcode', $response)) {
-            $this->errorCode = $response['errorcode'];
+        if (array_key_exists('errorcode', $decodedResponse)) {
+            $this->errorCode = $decodedResponse['errorcode'];
         } else {
             $this->errorCode = '';
         }
+        if (array_key_exists('expires', $decodedResponse)) {
+            $this->expires = (integer)$decodedResponse['expires'];
+        }
         if ($this->debug) {
-            echo "<h1>Response:</h1>\n<div><pre>";
-            echo htmlspecialchars(var_export($response, true));
-            echo "</pre></div>\n";
+            echo "#Response:\n", var_export($decodedResponse, true), "\n";
         }
-        if (!$this->lastStatus) {
-            throw new DataException($this->message, $this->errorCode);
-        }
-        return $response;
+        return $decodedResponse;
     }
 
     /**
-     * Submit a multipart POST request - like a form submission with FILE attachments.
-     * Adapted from do_post_request written by dresel at gmx dot at and Wez Furlong
-     * @link http://uk2.php.net/manual/en/function.stream-context-create.php#90411
-     * @link http://netevil.org/blog/2006/nov/http-post-from-php-without-curl
-     * @param string $url
-     * @param array $postdata
-     * @param array $files
-     * @throws Exception
-     * @return string
+     * Send an HTTP GET request to the API
+     * @param string $command
+     * @param array $params
+     * @param boolean $returnraw
+     * @return mixed
+     * @throws AuthException
+     * @throws ConnectionException
+     * @throws DataException
      */
-    protected function doPostRequest($url, $postdata, $files = array())
+    protected function get(
+        $command,
+        $params = [],
+        $returnraw = false
+    )
     {
-        ini_set('arg_separator.output', '&');
-        $data = '';
-        $boundary = "---------------------" . substr(md5(rand(0, 32000)), 0, 10);
+        return $this->request('get', $command, $params, null, $returnraw);
+    }
 
-        //Collect Postdata
-        foreach ($postdata as $key => $val) {
-            $data .= "--$boundary\n";
-            $data .= "Content-Disposition: form-data; name=\"" . $key . "\"\n\n" . $val . "\n";
-        }
-
-        $data .= "--$boundary\n";
-
-        //Collect Filedata
-        foreach ($files as $file) {
-            $filename = basename($file);
-            $data .= "Content-Disposition: form-data; name=\"$filename\"; filename=\"$filename\"\n";
-            $data .= "Content-Type: application/octet-stream\n"; //Could be anything, so just upload as raw binary
-            $data .= "Content-Transfer-Encoding: binary\n\n";
-            $data .= file_get_contents($file) . "\n";
-            $data .= "--$boundary--\n";
-        }
-
-        $params = array(
-            'http' => array(
-                'method' => 'POST',
-                'header' => 'Content-Type: multipart/form-data; boundary=' . $boundary,
-                'content' => $data
-            )
-        );
-        //Enforce valid SSL certificates
-        if (substr($url, 0, 6) == 'https:') {
-            $params['ssl'] = array(
-                'verify_peer' => true,
-                'verify_peer_name' => true,
-                'allow_self_signed' => false
-            );
-        }
-
-        if ($this->debug) {
-            echo "<h2>POST body:</h2><pre>\n";
-            echo htmlentities(substr($data, 0, 8192), ENT_QUOTES, 'UTF-8'); //Limit size of debug output
-            echo "</pre>\n";
-        }
-
-        $ctx = stream_context_create($params);
-        $fileh = fopen($url, 'rb', false, $ctx);
-
-        if (!$fileh) {
-            throw new ConnectionException("Problem with $url, $php_errormsg");
-        }
-
-        $response = @stream_get_contents($fileh);
-        if ($response === false) {
-            throw new ConnectionException("Problem reading data from $url, $php_errormsg");
-        }
-        return $response;
+    /**
+     * Send an HTTP POST request to the API.
+     * @param string $command
+     * @param array $params
+     * @param array $files Files to upload
+     * @param boolean $returnraw
+     * @return mixed
+     * @throws AuthException
+     * @throws ConnectionException
+     * @throws DataException
+     */
+    protected function post(
+        $command,
+        $params = [],
+        $files = [],
+        $returnraw = false
+    ) {
+        return $this->request('post', $command, $params, $files, $returnraw);
     }
 }
 
