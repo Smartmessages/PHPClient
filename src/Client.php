@@ -844,6 +844,7 @@ class Client
      * @param boolean $importimages Whether to do a one-off import and URL conversion
      *      of images referenced in the template
      * @param boolean $convertformat Set to true to automatically identify and convert from other template formats
+     * @param boolean $inline Set to true to automatically convert style sheets into inline styles when sending
      * @return integer|boolean Returns the ID of the new template or false on failure
      * @access public
      */
@@ -855,7 +856,8 @@ class Client
         $description = '',
         $generateplain = false,
         $importimages = false,
-        $convertformat = false
+        $convertformat = false,
+        $inline = false
     ) {
         $res = $this->post(
             'addtemplate',
@@ -867,7 +869,8 @@ class Client
                 'description' => $description,
                 'generateplain' => (boolean)$generateplain,
                 'importimages' => (boolean)$importimages,
-                'convertformat' => (boolean)$convertformat
+                'convertformat' => (boolean)$convertformat,
+                'inline' => (boolean)$inline
             ]
         );
         //Return the new template ID on success, or false if it failed
@@ -888,6 +891,7 @@ class Client
      * @param boolean $importimages Whether to do a one-off import and URL conversion
      *      of images referenced in the template
      * @param boolean $convertformat Set to true to automatically identify and convert from other template formats
+     * @param boolean $inline Set to true to automatically convert style sheets into inline styles when sending
      * @return boolean
      * @access public
      */
@@ -900,7 +904,8 @@ class Client
         $description = '',
         $generateplain = false,
         $importimages = false,
-        $convertformat = false
+        $convertformat = false,
+        $inline = false
     ) {
         //Use a post request to cope with large content
         $res = $this->post(
@@ -914,7 +919,8 @@ class Client
                 'description' => $description,
                 'generateplain' => $generateplain,
                 'importimages' => (boolean)$importimages,
-                'convertformat' => (boolean)$convertformat
+                'convertformat' => (boolean)$convertformat,
+                'inline' => (boolean)$inline
             ]
         );
         //Return true on success, or false if it failed
@@ -932,6 +938,7 @@ class Client
      * @param boolean $importimages Whether to do a one-off import and URL conversion
      *      of images referenced in the template
      * @param boolean $convertformat Set to true to automatically identify and convert from other template formats
+     * @param boolean $inline Set to true to automatically convert style sheets into inline styles when sending
      * @return integer|boolean Returns the ID of the new template or false on failure
      * @throws ParameterException
      * @access public
@@ -942,7 +949,8 @@ class Client
         $subject,
         $description = '',
         $importimages = false,
-        $convertformat = false
+        $convertformat = false,
+        $inline = false
     ) {
         if (!filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_HOST_REQUIRED | FILTER_FLAG_SCHEME_REQUIRED)) {
             throw new ParameterException('Invalid template URL');
@@ -955,7 +963,8 @@ class Client
                 'subject' => $subject,
                 'description' => $description,
                 'importimages' => (boolean)$importimages,
-                'convertformat' => (boolean)$convertformat
+                'convertformat' => (boolean)$convertformat,
+                'inline' => (boolean)$inline
             ]
         );
         //Return the new template ID on success, or false if it failed
@@ -992,6 +1001,7 @@ class Client
      *      or an ISO-format UTC date ('yyyy-mm-dd hh:mm:ss')
      * @param boolean $continuous Is this a continuous mailshot? (never completes, existing subs are ignored,
      *      new subscriptions are sent a message immediately, ideal for 'welcome' messages)
+     * @param boolean $inline Set to true to automatically convert style sheets into inline styles when sending
      * @return integer|boolean ID of the new mailshot id, or false on failure
      * @access public
      */
@@ -1005,7 +1015,8 @@ class Client
         $fromname = '',
         $replyto = '',
         $when = 'now',
-        $continuous = false
+        $continuous = false,
+        $inline = false
     ) {
         $res = $this->get(
             'sendmailshot',
@@ -1019,7 +1030,8 @@ class Client
                 'fromname' => $fromname,
                 'replyto' => $replyto,
                 'when' => $when,
-                'continuous' => (boolean)$continuous
+                'continuous' => (boolean)$continuous,
+                'inline' => (boolean)$inline
             ]
         );
         //Return the new mailshot ID on success, or false if it failed
@@ -1138,8 +1150,7 @@ class Client
         $command,
         $params = [],
         $returnraw = false
-    )
-    {
+    ) {
         return $this->request('get', $command, $params, null, $returnraw);
     }
 
