@@ -2,9 +2,9 @@
   "name": "smartmessages/phpclient",
   "description": "Client wrapper for the Smartmessages.net web API",
   "require": {
-    "php": ">=5.4.0",
+    "php": "^8.0.0",
     "ext-openssl": "*",
-    "guzzlehttp/guzzle": "~6.0"
+    "guzzlehttp/guzzle": "~7.0"
   },
   "license": "MIT",
   "authors": [

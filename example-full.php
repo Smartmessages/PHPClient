@@ -6,15 +6,13 @@
  * Note that this script will not work as is - you will need to substitute your own login ID, password, API key
  * and test list IDs in the variables below (or in an override file)
  * @author Marcus Bointon <marcus@synchromedia.co.uk>
- * @copyright 2015 Synchromedia Limited
+ * @copyright 2024 Synchromedia Limited
  * @link https://info.smartmessages.net/ Smartmessages mailing lists management
  * @link https://wiki.smartmessages.net/ Smartmessages user and developer documentation
  */
 
-/**
- * Include API client class if you're not using composer's autoloader
- */
-require 'src/Smartmessages/Client.php';
+use Smartmessages\ParameterException;
+use Smartmessages\Exception;
 
 /**
  * @var string $baseurl The initial root URL of API calls

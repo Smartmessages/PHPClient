@@ -14,7 +14,7 @@ try {
     $sm = new Smartmessages\Client(true);
     //Login
     $sm->login($user, $pass, $apikey, $baseurl);
-    $tl = $sm->getTestList();
+    //$tl = $sm->getTestList();
     $p = $sm->ping();
     //Log out happens automatically
 } catch (Smartmessages\Exception $e) {
