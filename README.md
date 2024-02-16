@@ -15,10 +15,10 @@ composer require smartmessages/phpclient=~3.0
 ## Installation
 To install the library and its dependencies, run `composer install`, then load the autoloader with `require 'vendor/autoload.php';`.
 
-Note that because this is a library, it doesn't have a `composer.lock` file, in accordance with composer's guidelines, and will use whatever shared dependencies you might have, which is essentially only guzzle.
+Note that because this is a library, it doesn't have a `composer.lock` file, in accordance with composer's guidelines, and will use whatever shared dependencies you might have, which is likely only guzzle, so long as they match the version constraints in `composer.json`.
 
 ## Version History
-Version 3.0 updated to Guzzle 7.0, and PHP 8.0+.
+Version 3.0 updated to Guzzle 7.0, and requires PHP 8.0+.
 
 Version 2.0 was rewritten to use [Guzzle](http://docs.guzzlephp.org/en/latest/) as its HTTP client, providing faster, more robust processing and [PSR-7](http://www.php-fig.org/psr/psr-7/) compatibility with many frameworks.
 

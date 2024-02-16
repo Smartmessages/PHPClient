@@ -1,13 +1,16 @@
 <?php
+
 /**
- * Smartmessages SmartmessagesAPI and SmartmessagesAPIException classes
- * PHP Version 5.3
+ * Smartmessages Client and Exception classes
+ * PHP Version 8.0
  * @package Smartmessages\Client
  * @author Marcus Bointon <marcus@synchromedia.co.uk>
- * @copyright 2015 Synchromedia Limited
+ * @copyright 2024 Synchromedia Limited
  * @license MIT http://opensource.org/licenses/MIT
  * @link https://github.com/Smartmessages/PHPClient
  */
+
+declare(strict_types=1);
 
 namespace Smartmessages;
 
@@ -17,17 +20,14 @@ use Smartmessages\Exception\ConnectionException;
 use Smartmessages\Exception\DataException;
 use Smartmessages\Exception\ParameterException;
 
-/**
- * The Smartmessages API Client class
- * @package Smartmessages\Client
- * @author Marcus Bointon <marcus@synchromedia.co.uk>
- * @copyright 2015 Synchromedia Limited
- * @license MIT http://opensource.org/licenses/MIT
- * @link https://info.smartmessages.net/ Smartmessages mailing lists management
- * @link https://wiki.smartmessages.net/ Smartmessages documentation
- */
 class Client
 {
+    /**
+     * The default base URL for the Smartmessages API.
+     * @type string
+     */
+    public const BASEURL = 'https://www.smartmessages.net/api/';
+
     /**
      * The authenticated access key for this session.
      * @type string
@@ -103,8 +103,12 @@ class Client
      * @throws Exception
      * @access public
      */
-    public function login(string $user, string $pass, string $apikey, string $baseurl = 'https://www.smartmessages.net/api/'): bool
-    {
+    public function login(
+        string $user,
+        string $pass,
+        string $apikey,
+        string $baseurl = self::BASEURL
+    ): bool {
         $this->endpoint = $baseurl;
         $response = $this->get(
             'login',
@@ -154,7 +158,7 @@ class Client
     /**
      * Subscribe an address to a list.
      * @param string $address The email address
-     * @param int $listid The ID of the list to subscribe the user to
+     * @param int $listId The ID of the list to subscribe the user to
      * @param string $dear A preferred greeting that's not necessarily their actual name,
      *  such as 'Scooter', 'Mrs Smith', 'Mr President'
      * @param string $firstname The subscriber's first name
@@ -164,19 +168,24 @@ class Client
      * @access public
      * @see getLists()
      */
-    public function subscribe(string $address, int $listid, string $dear = '', string $firstname = '', string $lastname = ''): bool
-    {
-        if ($listid <= 0 || trim($address) === '') {
+    public function subscribe(
+        string $address,
+        int    $listId,
+        string $dear = '',
+        string $firstname = '',
+        string $lastname = ''
+    ): bool {
+        if ($listId <= 0 || trim($address) === '') {
             throw new ParameterException('Invalid subscribe parameters');
         }
         $res = $this->get(
             'subscribe',
             [
-                'address' => trim($address),
-                'listid' => $listid,
-                'name' => $dear,
+                'address'   => trim($address),
+                'listid'    => $listId,
+                'name'      => $dear,
                 'firstname' => $firstname,
-                'lastname' => $lastname
+                'lastname'  => $lastname
             ]
         );
         return $res['status'];
@@ -221,8 +230,8 @@ class Client
             'addsubscription',
             [
                 'address' => trim($address),
-                'listid' => $listid,
-                'note' => $note
+                'listid'  => $listid,
+                'note'    => $note
             ]
         );
         return $res['status'];
@@ -248,7 +257,7 @@ class Client
             'deletesubscription',
             [
                 'address' => trim($address),
-                'listid' => $listid
+                'listid'  => $listid
             ]
         );
         return $res['status'];
@@ -279,12 +288,12 @@ class Client
     /**
      * Download a complete mailing list.
      * Gets a complete list of recipients on a mailing list.
-     * If the ascsv parameter is supplied and true, results will be provided in CSV format,
-     * which is smaller, faster and easier to handle (just save it directly to a file) than other formats.
-     * We strongly recommend that you use the ascsv option as the response can be extremely large
-     * in PHP, JSON or XML formats, extending to hundreds of megabytes for large lists,
+     * By default, the response to this call returns data in CSV format, which is smaller,
+     * faster and easier to handle (just save it directly to a file) than other formats.
+     * We strongly recommend sticking with that format as the response can be extremely large
+     * in PHP, JSON, or XML formats, extending to hundreds of megabytes for large lists,
      * taking a correspondingly long time to download, and possibly causing memory problems
-     * in client code. For this reason, this function defaults to CSV format.
+     * in client code.
      * @param int $listid The ID of the list to fetch
      * @param bool $ascsv Whether to get the list as CSV,
      *      as opposed to the currently selected format (e.g. JSON or XML)
@@ -337,10 +346,10 @@ class Client
         $res = $this->get(
             'updatelist',
             [
-                'listid' => $listid,
-                'name' => trim($name),
+                'listid'      => $listid,
+                'name'        => trim($name),
                 'description' => trim($description),
-                'visible' => $visible
+                'visible'     => $visible
             ]
         );
         return $res['status'];
@@ -472,12 +481,12 @@ class Client
      * @see getUploadInfo()
      */
     public function uploadList(
-        int $listid,
+        int    $listid,
         string $listfilename,
         string $source,
-        bool $definitive = false,
-        bool $replace = false,
-        bool $fieldorderfirstline = false
+        bool   $definitive = false,
+        bool   $replace = false,
+        bool   $fieldorderfirstline = false
     ): bool|int {
         if ($listid <= 0) {
             throw new ParameterException('Invalid list id');
@@ -491,11 +500,11 @@ class Client
         $res = $this->post(
             'uploadlist',
             [
-                'method' => 'uploadlist',
-                'listid' => $listid,
-                'source' => $source,
-                'definitive' => $definitive,
-                'replace' => $replace,
+                'method'              => 'uploadlist',
+                'listid'              => $listid,
+                'source'              => $source,
+                'definitive'          => $definitive,
+                'replace'             => $replace,
                 'fieldorderfirstline' => $fieldorderfirstline
             ],
             [$listfilename]
@@ -522,7 +531,7 @@ class Client
         $res = $this->get(
             'getuploadinfo',
             [
-                'listid' => $listid,
+                'listid'   => $listid,
                 'uploadid' => $uploadid
             ]
         );
@@ -569,7 +578,7 @@ class Client
         $res = $this->get(
             'cancelupload',
             [
-                'listid' => $listid,
+                'listid'   => $listid,
                 'uploadid' => $uploadid
             ]
         );
@@ -662,7 +671,7 @@ class Client
             'updatecampaign',
             [
                 'campaignid' => $campaignid,
-                'name' => trim($name)
+                'name'       => trim($name)
             ]
         );
         return $res['status'];
@@ -721,7 +730,7 @@ class Client
             'getmailshotclicks',
             [
                 'mailshotid' => $mailshotid,
-                'ascsv' => $ascsv
+                'ascsv'      => $ascsv
             ],
             $ascsv
         );
@@ -745,7 +754,7 @@ class Client
             'getmailshotopens',
             [
                 'mailshotid' => $mailshotid,
-                'ascsv' => $ascsv
+                'ascsv'      => $ascsv
             ],
             $ascsv
         );
@@ -769,7 +778,7 @@ class Client
             'getmailshotunsubs',
             [
                 'mailshotid' => $mailshotid,
-                'ascsv' => $ascsv
+                'ascsv'      => $ascsv
             ],
             $ascsv
         );
@@ -793,7 +802,7 @@ class Client
             'getmailshotbounces',
             [
                 'mailshotid' => $mailshotid,
-                'ascsv' => $ascsv
+                'ascsv'      => $ascsv
             ],
             $ascsv
         );
@@ -855,23 +864,23 @@ class Client
         string $plain,
         string $subject,
         string $description = '',
-        bool $generateplain = false,
-        bool $importimages = false,
-        bool $convertformat = false,
-        bool $inline = false
+        bool   $generateplain = false,
+        bool   $importimages = false,
+        bool   $convertformat = false,
+        bool   $inline = false
     ): bool|int {
         $res = $this->post(
             'addtemplate',
             [
-                'name' => $name,
-                'plain' => $plain,
-                'html' => $html,
-                'subject' => $subject,
-                'description' => $description,
+                'name'          => $name,
+                'plain'         => $plain,
+                'html'          => $html,
+                'subject'       => $subject,
+                'description'   => $description,
                 'generateplain' => $generateplain,
-                'importimages' => $importimages,
+                'importimages'  => $importimages,
                 'convertformat' => $convertformat,
-                'inline' => $inline
+                'inline'        => $inline
             ]
         );
         //Return the new template ID on success, or false if it failed
@@ -897,31 +906,31 @@ class Client
      * @access public
      */
     public function updateTemplate(
-        int $templateid,
+        int    $templateid,
         string $name,
         string $html,
         string $plain,
         string $subject,
         string $description = '',
-        bool $generateplain = false,
-        bool $importimages = false,
-        bool $convertformat = false,
-        bool $inline = false
+        bool   $generateplain = false,
+        bool   $importimages = false,
+        bool   $convertformat = false,
+        bool   $inline = false
     ): bool {
         //Use a post request to cope with large content
         $res = $this->post(
             'updatetemplate',
             [
-                'templateid' => $templateid,
-                'name' => $name,
-                'plain' => $plain,
-                'html' => $html,
-                'subject' => $subject,
-                'description' => $description,
+                'templateid'    => $templateid,
+                'name'          => $name,
+                'plain'         => $plain,
+                'html'          => $html,
+                'subject'       => $subject,
+                'description'   => $description,
                 'generateplain' => $generateplain,
-                'importimages' => $importimages,
+                'importimages'  => $importimages,
                 'convertformat' => $convertformat,
-                'inline' => $inline
+                'inline'        => $inline
             ]
         );
         //Return true on success, or false if it failed
@@ -949,9 +958,9 @@ class Client
         string $url,
         string $subject,
         string $description = '',
-        bool $importimages = false,
-        bool $convertformat = false,
-        bool $inline = false
+        bool   $importimages = false,
+        bool   $convertformat = false,
+        bool   $inline = false
     ): bool|int {
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
             throw new ParameterException('Invalid template URL');
@@ -959,13 +968,13 @@ class Client
         $res = $this->get(
             'addtemplatefromurl',
             [
-                'name' => $name,
-                'url' => $url,
-                'subject' => $subject,
-                'description' => $description,
-                'importimages' => $importimages,
+                'name'          => $name,
+                'url'           => $url,
+                'subject'       => $subject,
+                'description'   => $description,
+                'importimages'  => $importimages,
                 'convertformat' => $convertformat,
-                'inline' => $inline
+                'inline'        => $inline
             ]
         );
         //Return the new template ID on success, or false if it failed
@@ -1007,32 +1016,32 @@ class Client
      * @access public
      */
     public function sendMailshot(
-        int $templateid,
-        int $listid,
+        int    $templateid,
+        int    $listid,
         string $title = '',
-        int $campaignid = 0,
+        int    $campaignid = 0,
         string $subject = '',
         string $fromaddr = '',
         string $fromname = '',
         string $replyto = '',
         string $when = 'now',
-        bool $continuous = false,
-        bool $inline = false
+        bool   $continuous = false,
+        bool   $inline = false
     ): bool|int {
         $res = $this->get(
             'sendmailshot',
             [
                 'templateid' => $templateid,
-                'listid' => $listid,
-                'title' => $title,
+                'listid'     => $listid,
+                'title'      => $title,
                 'campaignid' => $campaignid,
-                'subject' => $subject,
-                'fromaddr' => $fromaddr,
-                'fromname' => $fromname,
-                'replyto' => $replyto,
-                'when' => $when,
+                'subject'    => $subject,
+                'fromaddr'   => $fromaddr,
+                'fromname'   => $fromname,
+                'replyto'    => $replyto,
+                'when'       => $when,
                 'continuous' => $continuous,
-                'inline' => $inline
+                'inline'     => $inline
             ]
         );
         //Return the new mailshot ID on success, or false if it failed
@@ -1054,9 +1063,9 @@ class Client
     protected function request(
         string $verb,
         string $command,
-        array $params = [],
-        array $files = [],
-        bool $returnraw = false
+        array  $params = [],
+        array  $files = [],
+        bool   $returnraw = false
     ): mixed {
         //All commands except login need an accessKey
         if (!empty($this->accessKey)) {
@@ -1099,7 +1108,7 @@ class Client
                     $command,
                     [
                         'form_params' => $params,
-                        'form_files' => $form_files
+                        'form_files'  => $form_files
                     ]
                 );
             }
@@ -1149,8 +1158,8 @@ class Client
      */
     protected function get(
         string $command,
-        array $params = [],
-        bool $returnraw = false
+        array  $params = [],
+        bool   $returnraw = false
     ): mixed {
         return $this->request('get', $command, $params, [], $returnraw);
     }
@@ -1168,9 +1177,9 @@ class Client
      */
     protected function post(
         string $command,
-        array $params = [],
-        array $files = [],
-        bool $returnraw = false
+        array  $params = [],
+        array  $files = [],
+        bool   $returnraw = false
     ): mixed {
         return $this->request('post', $command, $params, $files, $returnraw);
     }

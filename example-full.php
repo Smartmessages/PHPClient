@@ -11,32 +11,31 @@
  * @link https://wiki.smartmessages.net/ Smartmessages user and developer documentation
  */
 
-use Smartmessages\ParameterException;
 use Smartmessages\Exception;
 
 /**
- * @var string $baseurl The initial root URL of API calls
+ * The initial root URL of API calls
  */
 $baseurl = 'https://www.smartmessages.net/api/';
 /**
- * @var string $user The user name (email address) you use to log into your Smartmessages account
+ * The username (email address) you use to log into your Smartmessages account
  */
 $user = '';
 /**
- * @var string $pass The password you use to log into your Smartmessages account
+ * The password you use to log into your Smartmessages account
  */
 $pass = '';
 /**
- * @var string $apikey The API key that appears on the account page in your Smartmessages account
+ * The API key that appears on the account page in your Smartmessages account
  */
 $apikey = '';
 /**
- * @var string $endpoint The access location that the login call tells you to use for subsequent requests
+ * The access location that the login call tells you to use for subsequent requests
  * Will usually be the same as the initial access URL, but may change in future, so please use it
  */
 $endpoint = '';
 /**
- * @var integer $testlistid A list id to test with, as found on the contacts page of your Smartmessages account
+ * A list id to test with, as found on the contacts page of your Smartmessages account
  * or in response to the getLists API call
  */
 $testlistid = 0;
@@ -102,8 +101,8 @@ try {
     $template1_id = $smartmessages->updateTemplate(
         $template1_id,
         'apitest',
-        '<html><head></head><body>'.
-        '<h1>HTML <img alt="Butterfly" src="http://www.smartmessages.net/images/butterfly.png">'.
+        '<html><head></head><body>' .
+        '<h1>HTML <img alt="Butterfly" src="http://www.smartmessages.net/images/butterfly.png">' .
         '</h1></body></html>',
         'plain',
         'subject',
@@ -185,11 +184,11 @@ try {
         $user,
         array(
             'firstname' => 'Joe',
-            'lastname' => 'User',
-            'country' => 'FR',
-            'jobtitle' => 'Chief Techie Lurker',
-            'custom10' => date('Y-m-d H:i:s'),
-            'custom3' => '1 2 3'
+            'lastname'  => 'User',
+            'country'   => 'FR',
+            'jobtitle'  => 'Chief Techie Lurker',
+            'custom10'  => date('Y-m-d H:i:s'),
+            'custom3'   => '1 2 3'
         )
     );
     $smartmessages->getUserInfo($user);
