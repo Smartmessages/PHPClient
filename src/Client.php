@@ -170,7 +170,7 @@ class Client
      */
     public function subscribe(
         string $address,
-        int    $listId,
+        int $listId,
         string $dear = '',
         string $firstname = '',
         string $lastname = ''
@@ -481,12 +481,12 @@ class Client
      * @see getUploadInfo()
      */
     public function uploadList(
-        int    $listid,
+        int $listid,
         string $listfilename,
         string $source,
-        bool   $definitive = false,
-        bool   $replace = false,
-        bool   $fieldorderfirstline = false
+        bool $definitive = false,
+        bool $replace = false,
+        bool $fieldorderfirstline = false
     ): bool|int {
         if ($listid <= 0) {
             throw new ParameterException('Invalid list id');
@@ -864,10 +864,10 @@ class Client
         string $plain,
         string $subject,
         string $description = '',
-        bool   $generateplain = false,
-        bool   $importimages = false,
-        bool   $convertformat = false,
-        bool   $inline = false
+        bool $generateplain = false,
+        bool $importimages = false,
+        bool $convertformat = false,
+        bool $inline = false
     ): bool|int {
         $res = $this->post(
             'addtemplate',
@@ -906,16 +906,16 @@ class Client
      * @access public
      */
     public function updateTemplate(
-        int    $templateid,
+        int $templateid,
         string $name,
         string $html,
         string $plain,
         string $subject,
         string $description = '',
-        bool   $generateplain = false,
-        bool   $importimages = false,
-        bool   $convertformat = false,
-        bool   $inline = false
+        bool $generateplain = false,
+        bool $importimages = false,
+        bool $convertformat = false,
+        bool $inline = false
     ): bool {
         //Use a post request to cope with large content
         $res = $this->post(
@@ -958,9 +958,9 @@ class Client
         string $url,
         string $subject,
         string $description = '',
-        bool   $importimages = false,
-        bool   $convertformat = false,
-        bool   $inline = false
+        bool $importimages = false,
+        bool $convertformat = false,
+        bool $inline = false
     ): bool|int {
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
             throw new ParameterException('Invalid template URL');
@@ -1016,17 +1016,17 @@ class Client
      * @access public
      */
     public function sendMailshot(
-        int    $templateid,
-        int    $listid,
+        int $templateid,
+        int $listid,
         string $title = '',
-        int    $campaignid = 0,
+        int $campaignid = 0,
         string $subject = '',
         string $fromaddr = '',
         string $fromname = '',
         string $replyto = '',
         string $when = 'now',
-        bool   $continuous = false,
-        bool   $inline = false
+        bool $continuous = false,
+        bool $inline = false
     ): bool|int {
         $res = $this->get(
             'sendmailshot',
@@ -1063,9 +1063,9 @@ class Client
     protected function request(
         string $verb,
         string $command,
-        array  $params = [],
-        array  $files = [],
-        bool   $returnraw = false
+        array $params = [],
+        array $files = [],
+        bool $returnraw = false
     ): mixed {
         //All commands except login need an accessKey
         if (!empty($this->accessKey)) {
@@ -1158,8 +1158,8 @@ class Client
      */
     protected function get(
         string $command,
-        array  $params = [],
-        bool   $returnraw = false
+        array $params = [],
+        bool $returnraw = false
     ): mixed {
         return $this->request('get', $command, $params, [], $returnraw);
     }
@@ -1177,9 +1177,9 @@ class Client
      */
     protected function post(
         string $command,
-        array  $params = [],
-        array  $files = [],
-        bool   $returnraw = false
+        array $params = [],
+        array $files = [],
+        bool $returnraw = false
     ): mixed {
         return $this->request('post', $command, $params, $files, $returnraw);
     }
